@@ -1,4 +1,4 @@
 {
   "inventoryApiUrl": "https://maple-leaf-inventory.sal96wpg.workers.dev/inventory",
-  "notes": "After deploying the Cloudflare Worker, set inventoryApiUrl to https://YOUR-WORKER.workers.dev/inventory"
+  "notes": "Live Cloudflare Worker inventory API for Maple Leaf Motors. Already configured."
 }

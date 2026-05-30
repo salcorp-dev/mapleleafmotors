@@ -21,3 +21,10 @@ Password:
 
 Important:
 This is still a static prototype. Real leads and real inventory publishing need a backend.
+
+
+## v7 Professional Update
+- Sleeker dealership-style UI
+- Live inventory API URL is already coded in config.json and app.js fallback
+- Improved vehicle detail page with contained gallery, thumbnails, and fullscreen lightbox
+- Improved mobile layout and sticky CTA
