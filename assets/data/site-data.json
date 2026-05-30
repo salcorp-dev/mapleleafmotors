@@ -1,7 +1,7 @@
 {
   "inventory": [
     {
-      "id": "sample-1",
+      "id": "2021-honda-civic-ex",
       "year": 2021,
       "make": "Honda",
       "model": "Civic",
@@ -12,17 +12,18 @@
       "featured": true,
       "sold": false,
       "images": [
-        "https://images.unsplash.com/photo-1606152421802-db97b9c7a11b?auto=format&fit=crop&w=1200&q=80"
+        "https://images.unsplash.com/photo-1606152421802-db97b9c7a11b?auto=format&fit=crop&w=1400&q=80"
       ],
       "features": [
         "Heated Seats",
         "Backup Camera",
-        "Apple CarPlay"
+        "Apple CarPlay",
+        "Fuel Efficient"
       ],
-      "description": "Clean, efficient sedan with flexible financing options."
+      "description": "A clean, fuel-efficient sedan with modern features and flexible financing options."
     },
     {
-      "id": "sample-2",
+      "id": "2020-ford-f150-xlt",
       "year": 2020,
       "make": "Ford",
       "model": "F-150",
@@ -33,17 +34,18 @@
       "featured": true,
       "sold": false,
       "images": [
-        "https://images.unsplash.com/photo-1605893477799-b99e3b8b93fe?auto=format&fit=crop&w=1200&q=80"
+        "https://images.unsplash.com/photo-1605893477799-b99e3b8b93fe?auto=format&fit=crop&w=1400&q=80"
       ],
       "features": [
         "4x4",
         "Crew Cab",
-        "Tow Package"
+        "Tow Package",
+        "Backup Camera"
       ],
-      "description": "Capable truck ready for work, family and Canadian winters."
+      "description": "A capable truck for work, family, and Canadian winters."
     },
     {
-      "id": "sample-3",
+      "id": "2019-toyota-rav4-le-awd",
       "year": 2019,
       "make": "Toyota",
       "model": "RAV4",
@@ -54,17 +56,18 @@
       "featured": true,
       "sold": false,
       "images": [
-        "https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?auto=format&fit=crop&w=1200&q=80"
+        "https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?auto=format&fit=crop&w=1400&q=80"
       ],
       "features": [
         "AWD",
         "Lane Assist",
-        "Bluetooth"
+        "Bluetooth",
+        "Great Fuel Economy"
       ],
-      "description": "Practical SUV with AWD confidence."
+      "description": "A practical SUV with AWD confidence and Toyota reliability."
     },
     {
-      "id": "sample-4",
+      "id": "2022-hyundai-elantra-preferred",
       "year": 2022,
       "make": "Hyundai",
       "model": "Elantra",
@@ -75,31 +78,54 @@
       "featured": true,
       "sold": false,
       "images": [
-        "https://images.unsplash.com/photo-1619767886558-efdc259cde1a?auto=format&fit=crop&w=1200&q=80"
+        "https://images.unsplash.com/photo-1619767886558-efdc259cde1a?auto=format&fit=crop&w=1400&q=80"
       ],
       "features": [
-        "Fuel Efficient",
         "Blind Spot Assist",
-        "CarPlay"
+        "CarPlay",
+        "Heated Seats",
+        "Warranty Remaining"
       ],
-      "description": "Modern sedan with excellent value."
+      "description": "Modern sedan with excellent value and a comfortable daily drive."
+    },
+    {
+      "id": "2020-mazda-cx5-gs",
+      "year": 2020,
+      "make": "Mazda",
+      "model": "CX-5",
+      "trim": "GS AWD",
+      "price": 30995,
+      "mileage": 72000,
+      "bodyStyle": "SUV",
+      "featured": true,
+      "sold": false,
+      "images": [
+        "https://images.unsplash.com/photo-1617469767053-d3b523a0b982?auto=format&fit=crop&w=1400&q=80"
+      ],
+      "features": [
+        "AWD",
+        "Sunroof",
+        "Heated Seats",
+        "Backup Camera"
+      ],
+      "description": "Stylish AWD SUV with premium feel and practical space."
     }
   ],
   "testimonials": [
     {
       "name": "Amandeep S.",
       "rating": 5,
-      "text": "The team explained my options clearly and helped me move forward without pressure."
+      "text": "They explained the approval process clearly and helped me understand my options."
     },
     {
       "name": "Melissa R.",
       "rating": 5,
-      "text": "I was rebuilding credit and they made the process simple."
+      "text": "Fast reply and no pressure. I felt comfortable asking questions."
     },
     {
       "name": "Omar K.",
       "rating": 5,
-      "text": "Fast response, clear payments, and friendly service."
+      "text": "The payment options were clear and the team followed up quickly."
     }
   ],
   "deliveries": [],

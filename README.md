@@ -1,21 +1,23 @@
-# Maple Leaf Motors v4
+# Maple Leaf Motors v5
 
-Consumer-friendly version with:
+Responsive desktop + mobile optimized website.
+
+Features:
+- Mobile-first responsive layout
 - Inventory-first homepage
-- Hero vehicle carousel
-- Featured inventory carousel
-- Approval CTA still prominent
-- Hidden SEO content
-- Admin image upload fields
-- Media library
-- Lead command center
-- Listing Studio import area
-- Cloudflare Worker starter for website inventory publishing
+- Hero inventory carousel
+- Featured inventory swipe carousel
+- Vehicle detail page
+- Sticky mobile CTA bar
+- Approval form
+- Admin prototype
+- Listing Studio JSON import support
 
 Admin:
 `/admin/index.html`
+
 Password:
 `MapleLeaf2026`
 
 Important:
-This is still a static prototype. Real lead and inventory publishing needs Cloudflare Workers/Supabase/Firebase.
+This is still a static prototype. Real leads and real inventory publishing need a backend.
