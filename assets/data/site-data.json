@@ -1,0 +1,107 @@
+{
+  "inventory": [
+    {
+      "id": "sample-1",
+      "year": 2021,
+      "make": "Honda",
+      "model": "Civic",
+      "trim": "EX",
+      "price": 24995,
+      "mileage": 61000,
+      "bodyStyle": "Sedan",
+      "featured": true,
+      "sold": false,
+      "images": [
+        "https://images.unsplash.com/photo-1606152421802-db97b9c7a11b?auto=format&fit=crop&w=1200&q=80"
+      ],
+      "features": [
+        "Heated Seats",
+        "Backup Camera",
+        "Apple CarPlay"
+      ],
+      "description": "Clean, efficient sedan with flexible financing options."
+    },
+    {
+      "id": "sample-2",
+      "year": 2020,
+      "make": "Ford",
+      "model": "F-150",
+      "trim": "XLT 4x4",
+      "price": 38995,
+      "mileage": 89000,
+      "bodyStyle": "Truck",
+      "featured": true,
+      "sold": false,
+      "images": [
+        "https://images.unsplash.com/photo-1605893477799-b99e3b8b93fe?auto=format&fit=crop&w=1200&q=80"
+      ],
+      "features": [
+        "4x4",
+        "Crew Cab",
+        "Tow Package"
+      ],
+      "description": "Capable truck ready for work, family and Canadian winters."
+    },
+    {
+      "id": "sample-3",
+      "year": 2019,
+      "make": "Toyota",
+      "model": "RAV4",
+      "trim": "LE AWD",
+      "price": 29995,
+      "mileage": 76000,
+      "bodyStyle": "SUV",
+      "featured": true,
+      "sold": false,
+      "images": [
+        "https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?auto=format&fit=crop&w=1200&q=80"
+      ],
+      "features": [
+        "AWD",
+        "Lane Assist",
+        "Bluetooth"
+      ],
+      "description": "Practical SUV with AWD confidence."
+    },
+    {
+      "id": "sample-4",
+      "year": 2022,
+      "make": "Hyundai",
+      "model": "Elantra",
+      "trim": "Preferred",
+      "price": 23995,
+      "mileage": 54000,
+      "bodyStyle": "Sedan",
+      "featured": true,
+      "sold": false,
+      "images": [
+        "https://images.unsplash.com/photo-1619767886558-efdc259cde1a?auto=format&fit=crop&w=1200&q=80"
+      ],
+      "features": [
+        "Fuel Efficient",
+        "Blind Spot Assist",
+        "CarPlay"
+      ],
+      "description": "Modern sedan with excellent value."
+    }
+  ],
+  "testimonials": [
+    {
+      "name": "Amandeep S.",
+      "rating": 5,
+      "text": "The team explained my options clearly and helped me move forward without pressure."
+    },
+    {
+      "name": "Melissa R.",
+      "rating": 5,
+      "text": "I was rebuilding credit and they made the process simple."
+    },
+    {
+      "name": "Omar K.",
+      "rating": 5,
+      "text": "Fast response, clear payments, and friendly service."
+    }
+  ],
+  "deliveries": [],
+  "media": []
+}
