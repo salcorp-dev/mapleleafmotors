@@ -1,4 +1,5 @@
 {
   "inventoryApiUrl": "https://maple-leaf-inventory.sal96wpg.workers.dev/inventory",
-  "notes": "Live Cloudflare Worker inventory API for Maple Leaf Motors. Already configured."
+  "notes": "Live Cloudflare Worker inventory API and client delivery/review API for Maple Leaf Motors.",
+  "clientsApiUrl": "https://maple-leaf-inventory.sal96wpg.workers.dev/clients"
 }
