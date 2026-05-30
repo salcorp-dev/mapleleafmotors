@@ -1,4 +1,4 @@
 {
-  "inventoryApiUrl": "https://maple-leaf-inventory.sal96wpg.workers.dev/inventory",
+  "inventoryApiUrl": "",
   "notes": "After deploying the Cloudflare Worker, set inventoryApiUrl to https://YOUR-WORKER.workers.dev/inventory"
 }
