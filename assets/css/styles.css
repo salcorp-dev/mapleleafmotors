@@ -1307,3 +1307,29 @@ label { font-family: var(--font-ui); font-size: 13px; font-weight: 600; color: v
 .funnel-option small {
   pointer-events: none;
 }
+
+
+/* v9.5 final funnel JS conflict fix visual state */
+.funnel-option.selected,
+.funnel-option.is-selected,
+.funnel-option[aria-pressed="true"] {
+  border-color: #c1121f !important;
+  background: #fff1f2 !important;
+  box-shadow: 0 0 0 2px rgba(193, 18, 31, .14), 0 16px 34px rgba(193, 18, 31, .16) !important;
+}
+.funnel-option.selected::after,
+.funnel-option.is-selected::after,
+.funnel-option[aria-pressed="true"]::after {
+  content: "✓";
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: #c1121f;
+  color: #fff;
+  display: inline-grid;
+  place-items: center;
+  font-weight: 900;
+  font-size: 14px;
+  flex: 0 0 auto;
+  margin-left: 10px;
+}
