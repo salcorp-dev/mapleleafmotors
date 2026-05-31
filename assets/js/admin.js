@@ -1,19 +1,74 @@
-
-const ADMIN_PASSWORD = 'MapleLeaf2026';
+const ADMIN_SESSION_KEY = 'mlm_admin_session';
 const STATUSES = ['NEW LEAD','CONTACTED','APPLICATION SENT','DEALERTRACK SUBMITTED','APPROVED','VEHICLE SELECTED','DELIVERED','LOST'];
-const CLIENTS_TOKEN_KEY = 'mlm_clients_api_token';
 
 const $ = (s, p = document) => p.querySelector(s);
 const $$ = (s, p = document) => [...p.querySelectorAll(s)];
 
+let CONFIG_CACHE = null;
+
 async function loadConfig() {
+  if (CONFIG_CACHE) return CONFIG_CACHE;
   try {
     const res = await fetch('../assets/data/config.json', { cache: 'no-store' });
-    if (res.ok) return await res.json();
+    if (res.ok) {
+      CONFIG_CACHE = await res.json();
+      return CONFIG_CACHE;
+    }
   } catch (e) {}
-  return {
+  CONFIG_CACHE = {
+    adminApiUrl: 'https://maple-leaf-inventory.sal96wpg.workers.dev/admin',
     clientsApiUrl: 'https://maple-leaf-inventory.sal96wpg.workers.dev/clients'
   };
+  return CONFIG_CACHE;
+}
+
+function adminToken() {
+  return sessionStorage.getItem(ADMIN_SESSION_KEY) || '';
+}
+
+function setAdminToken(token) {
+  sessionStorage.setItem(ADMIN_SESSION_KEY, token);
+  sessionStorage.setItem('mlm_admin', 'yes');
+}
+
+function clearAdminToken() {
+  sessionStorage.removeItem(ADMIN_SESSION_KEY);
+  sessionStorage.removeItem('mlm_admin');
+}
+
+async function adminRequest(path, options = {}) {
+  const config = await loadConfig();
+  const base = (config.adminApiUrl || 'https://maple-leaf-inventory.sal96wpg.workers.dev/admin').replace(/\/$/, '');
+  const headers = {
+    ...(options.headers || {}),
+    Authorization: `Bearer ${adminToken()}`
+  };
+
+  if (options.json) {
+    headers['Content-Type'] = 'application/json';
+    options.body = JSON.stringify(options.json);
+    delete options.json;
+  }
+
+  const res = await fetch(`${base}${path}`, { ...options, headers });
+  const data = await res.json().catch(() => ({}));
+
+  if (!res.ok || data.error) {
+    throw new Error(data.error || `Admin request failed (${res.status})`);
+  }
+
+  return data;
+}
+
+async function verifyAdminSession() {
+  if (!adminToken()) return false;
+  try {
+    await adminRequest('/session', { method: 'GET' });
+    return true;
+  } catch (e) {
+    clearAdminToken();
+    return false;
+  }
 }
 
 async function loadData() {
@@ -35,22 +90,41 @@ function saveLeads(l) {
   localStorage.setItem('mlm_leads', JSON.stringify(l));
 }
 
-function protect() {
-  if (location.pathname.includes('dashboard') && sessionStorage.getItem('mlm_admin') !== 'yes') {
-    location.href = 'index.html';
-  }
+async function protect() {
+  if (!location.pathname.includes('dashboard')) return;
+  const ok = await verifyAdminSession();
+  if (!ok) location.href = 'index.html';
 }
 
-function login() {
+async function login() {
   const f = $('#loginForm');
   if (!f) return;
-  f.onsubmit = e => {
+
+  f.onsubmit = async e => {
     e.preventDefault();
-    if ($('#password').value === ADMIN_PASSWORD) {
-      sessionStorage.setItem('mlm_admin', 'yes');
+    const password = $('#password').value;
+    const msg = $('#msg');
+
+    try {
+      const config = await loadConfig();
+      const base = (config.adminApiUrl || 'https://maple-leaf-inventory.sal96wpg.workers.dev/admin').replace(/\/$/, '');
+      if (msg) msg.textContent = 'Checking password...';
+
+      const res = await fetch(`${base}/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password })
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok || !data.token) {
+        throw new Error(data.error || 'Wrong password.');
+      }
+
+      setAdminToken(data.token);
       location.href = 'dashboard.html';
-    } else {
-      $('#msg').textContent = 'Wrong password.';
+    } catch (err) {
+      if (msg) msg.textContent = err.message || 'Login failed.';
     }
   };
 }
@@ -61,7 +135,16 @@ function tabs() {
       $$('.tab').forEach(x => x.classList.remove('active'));
       $$('.admin-section').forEach(x => x.classList.remove('active'));
       t.classList.add('active');
-      $('#' + t.dataset.tab).classList.add('active');
+      const section = $('#' + t.dataset.tab);
+      if (section) section.classList.add('active');
+    };
+  });
+
+  $$('.sidebar-link[data-goto]').forEach(link => {
+    link.onclick = e => {
+      e.preventDefault();
+      const tab = $(`.tab[data-tab="${link.dataset.goto}"]`);
+      if (tab) tab.click();
     };
   });
 }
@@ -91,11 +174,11 @@ async function fetchClientsFromApi(config) {
   }
 }
 
-async function postClientToApi(config, token, formData) {
-  if (!config.clientsApiUrl || !token) throw new Error('Missing API URL or API token.');
+async function postClientToApi(config, formData) {
+  if (!config.clientsApiUrl) throw new Error('Missing clients API URL.');
   const res = await fetch(config.clientsApiUrl, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${token}` },
+    headers: { Authorization: `Bearer ${adminToken()}` },
     body: formData
   });
   const payload = await res.json().catch(() => ({}));
@@ -103,12 +186,12 @@ async function postClientToApi(config, token, formData) {
   return payload;
 }
 
-async function deleteClientFromApi(config, token, type, id) {
-  if (!config.clientsApiUrl || !token) throw new Error('Missing API URL or API token.');
+async function deleteClientFromApi(config, type, id) {
+  if (!config.clientsApiUrl) throw new Error('Missing clients API URL.');
   const base = config.clientsApiUrl.replace(/\/$/, '');
   const res = await fetch(`${base}/${type}/${encodeURIComponent(id)}`, {
     method: 'DELETE',
-    headers: { Authorization: `Bearer ${token}` }
+    headers: { Authorization: `Bearer ${adminToken()}` }
   });
   const payload = await res.json().catch(() => ({}));
   if (!res.ok || payload.error) throw new Error(payload.error || `Delete failed (${res.status})`);
@@ -117,6 +200,12 @@ async function deleteClientFromApi(config, token, type, id) {
 
 async function dashboard() {
   if (!$('#leadRows')) return;
+
+  const ok = await verifyAdminSession();
+  if (!ok) {
+    location.href = 'index.html';
+    return;
+  }
 
   let data = await loadData();
   let config = await loadConfig();
@@ -132,13 +221,13 @@ async function dashboard() {
       data.deliveries = Array.isArray(clients.deliveries) ? clients.deliveries : [];
       data.testimonials = Array.isArray(clients.testimonials) ? clients.testimonials : [];
       saveData(data);
-      setClientStatus(true, 'Connected to website API');
+      setClientStatus(true, 'Website API connected');
       if (showAlert) alert('Client uploads refreshed from website API.');
       refresh();
       return true;
     }
     setClientStatus(false, 'Offline/local mode');
-    if (showAlert) alert('Could not reach clients API. Using local browser data.');
+    if (showAlert) alert('Could not reach clients API. Make sure the Worker was updated with /clients.');
     return false;
   }
 
@@ -152,9 +241,9 @@ async function dashboard() {
 
   function refresh() {
     saveData(data);
-    $('#totalLeads').textContent = leads().length;
-    $('#totalVehicles').textContent = data.inventory.length;
-    $('#mediaCount').textContent = (data.media.length || 0) + (data.deliveries || []).reduce((n, x) => n + ((x.images || []).length), 0);
+    if ($('#totalLeads')) $('#totalLeads').textContent = leads().length;
+    if ($('#totalVehicles')) $('#totalVehicles').textContent = data.inventory.length;
+    if ($('#mediaCount')) $('#mediaCount').textContent = (data.media.length || 0) + (data.deliveries || []).reduce((n, x) => n + ((x.images || []).length), 0);
     renderLeads();
     renderPipeline();
     renderInventory();
@@ -162,6 +251,7 @@ async function dashboard() {
   }
 
   function renderLeads() {
+    if (!$('#leadRows')) return;
     let arr = leads();
     $('#leadRows').innerHTML = arr.map((x, i) => `
       <tr>
@@ -183,6 +273,7 @@ async function dashboard() {
   }
 
   function renderPipeline() {
+    if (!$('#kanban')) return;
     let l = leads();
     $('#kanban').innerHTML = STATUSES.map(s => `
       <div class="lane">
@@ -193,6 +284,7 @@ async function dashboard() {
   }
 
   function renderInventory() {
+    if (!$('#vehicleRows')) return;
     $('#vehicleRows').innerHTML = data.inventory.map((v, i) => `
       <tr>
         <td>${escapeHtml(v.year)} ${escapeHtml(v.make)} ${escapeHtml(v.model)}</td>
@@ -242,16 +334,13 @@ async function dashboard() {
     $$('[data-delivery-delete]').forEach(btn => {
       btn.onclick = async () => {
         if (!confirm('Delete this delivery photo entry?')) return;
-        const token = localStorage.getItem(CLIENTS_TOKEN_KEY) || '';
         const id = btn.dataset.deliveryDelete;
         try {
-          if (token && id && !/^\d+$/.test(id)) await deleteClientFromApi(config, token, 'deliveries', id);
+          if (id && !/^\d+$/.test(id)) await deleteClientFromApi(config, 'deliveries', id);
           data.deliveries.splice(Number(btn.dataset.localIndex), 1);
           await syncClientsFromApi(false);
         } catch (e) {
-          data.deliveries.splice(Number(btn.dataset.localIndex), 1);
-          refresh();
-          alert('Deleted locally. API delete did not complete: ' + e.message);
+          alert('Delete failed: ' + e.message);
         }
       };
     });
@@ -259,75 +348,69 @@ async function dashboard() {
     $$('[data-testimonial-delete]').forEach(btn => {
       btn.onclick = async () => {
         if (!confirm('Delete this review?')) return;
-        const token = localStorage.getItem(CLIENTS_TOKEN_KEY) || '';
         const id = btn.dataset.testimonialDelete;
         try {
-          if (token && id && !/^\d+$/.test(id)) await deleteClientFromApi(config, token, 'testimonials', id);
+          if (id && !/^\d+$/.test(id)) await deleteClientFromApi(config, 'testimonials', id);
           data.testimonials.splice(Number(btn.dataset.localIndex), 1);
           await syncClientsFromApi(false);
         } catch (e) {
-          data.testimonials.splice(Number(btn.dataset.localIndex), 1);
-          refresh();
-          alert('Deleted locally. API delete did not complete: ' + e.message);
+          alert('Delete failed: ' + e.message);
         }
       };
     });
   }
 
-  $('#vehicleForm').onsubmit = async e => {
-    e.preventDefault();
-    let v = Object.fromEntries(new FormData(e.target).entries());
-    v.id = v.id || 'veh-' + Date.now();
-    v.year = +v.year;
-    v.price = +v.price;
-    v.mileage = +v.mileage;
-    v.featured = !!v.featured;
-    v.sold = !!v.sold;
-    v.features = (v.features || '').split(',').map(x => x.trim()).filter(Boolean);
+  const vehicleForm = $('#vehicleForm');
+  if (vehicleForm) {
+    vehicleForm.onsubmit = async e => {
+      e.preventDefault();
+      let v = Object.fromEntries(new FormData(e.target).entries());
+      v.id = v.id || 'veh-' + Date.now();
+      v.year = +v.year;
+      v.price = +v.price;
+      v.mileage = +v.mileage;
+      v.featured = !!v.featured;
+      v.sold = !!v.sold;
+      v.features = (v.features || '').split(',').map(x => x.trim()).filter(Boolean);
 
-    let files = $('#vehicleImages').files;
-    if (files.length) {
-      let imgs = await readFiles(files);
-      data.media.unshift(...imgs);
-      v.images = imgs.map(x => x.data);
-    }
+      let files = $('#vehicleImages').files;
+      if (files.length) {
+        let imgs = await readFiles(files);
+        data.media.unshift(...imgs);
+        v.images = imgs.map(x => x.data);
+      }
 
-    data.inventory.unshift(v);
-    e.target.reset();
-    refresh();
-  };
+      data.inventory.unshift(v);
+      e.target.reset();
+      refresh();
+    };
+  }
 
-  $('#importData').onchange = async e => {
-    let f = e.target.files[0];
-    if (!f) return;
-    let imported = JSON.parse(await f.text());
-    if (imported.vehicle) data.inventory.unshift(imported.vehicle);
-    else if (imported.inventory) data.inventory = imported.inventory;
-    else if (Array.isArray(imported)) data.inventory = imported;
-    else if (imported.siteData) data = imported.siteData;
+  const importData = $('#importData');
+  if (importData) {
+    importData.onchange = async e => {
+      let f = e.target.files[0];
+      if (!f) return;
+      let imported = JSON.parse(await f.text());
+      if (imported.vehicle) data.inventory.unshift(imported.vehicle);
+      else if (imported.inventory) data.inventory = imported.inventory;
+      else if (Array.isArray(imported)) data.inventory = imported;
+      else if (imported.siteData) data = imported.siteData;
 
-    data.deliveries = data.deliveries || [];
-    data.testimonials = data.testimonials || [];
-    refresh();
-  };
+      data.deliveries = data.deliveries || [];
+      data.testimonials = data.testimonials || [];
+      refresh();
+    };
+  }
 
-  $('#exportAll').onclick = () => {
-    let blob = new Blob([JSON.stringify({ siteData: data, leads: leads() }, null, 2)], { type: 'application/json' });
-    let a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'maple-leaf-motors-export.json';
-    a.click();
-  };
-
-  // Clients admin setup
-  const tokenInput = $('#clientsApiToken');
-  if (tokenInput) tokenInput.value = localStorage.getItem(CLIENTS_TOKEN_KEY) || '';
-
-  const saveToken = $('#saveClientsToken');
-  if (saveToken) {
-    saveToken.onclick = () => {
-      localStorage.setItem(CLIENTS_TOKEN_KEY, tokenInput.value.trim());
-      alert('API token saved in this browser.');
+  const exportAll = $('#exportAll');
+  if (exportAll) {
+    exportAll.onclick = () => {
+      let blob = new Blob([JSON.stringify({ siteData: data, leads: leads() }, null, 2)], { type: 'application/json' });
+      let a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'maple-leaf-motors-export.json';
+      a.click();
     };
   }
 
@@ -360,28 +443,13 @@ async function dashboard() {
       fd.append('type', 'delivery');
       fd.append('createdAt', new Date().toISOString());
 
-      const localImages = await readFiles($('#adminDeliveryImages').files);
-      const localEntry = {
-        id: 'delivery-' + Date.now(),
-        clientName: fd.get('clientName') || '',
-        vehicle: fd.get('vehicle') || '',
-        quote: fd.get('quote') || '',
-        rating: Number(fd.get('rating') || 5),
-        images: localImages.map(x => x.data),
-        createdAt: new Date().toISOString()
-      };
-
-      const token = localStorage.getItem(CLIENTS_TOKEN_KEY) || '';
       try {
-        const uploaded = await postClientToApi(config, token, fd);
-        data.deliveries.unshift(uploaded.entry || localEntry);
+        const uploaded = await postClientToApi(config, fd);
+        data.deliveries.unshift(uploaded.entry);
         await syncClientsFromApi(false);
-        alert('Delivery uploaded to the website API.');
+        alert('Delivery uploaded to the Our Clients page.');
       } catch (err) {
-        data.deliveries.unshift(localEntry);
-        saveData(data);
-        refresh();
-        alert('Saved locally only. To publish publicly, update the Worker and save the API token. Details: ' + err.message);
+        alert('Upload failed: ' + err.message);
       }
 
       deliveryForm.reset();
@@ -399,25 +467,13 @@ async function dashboard() {
       fd.append('type', 'testimonial');
       fd.append('createdAt', new Date().toISOString());
 
-      const localEntry = {
-        id: 'review-' + Date.now(),
-        name: fd.get('name') || '',
-        text: fd.get('text') || '',
-        rating: Number(fd.get('rating') || 5),
-        createdAt: new Date().toISOString()
-      };
-
-      const token = localStorage.getItem(CLIENTS_TOKEN_KEY) || '';
       try {
-        const uploaded = await postClientToApi(config, token, fd);
-        data.testimonials.unshift(uploaded.entry || localEntry);
+        const uploaded = await postClientToApi(config, fd);
+        data.testimonials.unshift(uploaded.entry);
         await syncClientsFromApi(false);
-        alert('Review uploaded to the website API.');
+        alert('Review uploaded to the Our Clients page.');
       } catch (err) {
-        data.testimonials.unshift(localEntry);
-        saveData(data);
-        refresh();
-        alert('Saved locally only. To publish publicly, update the Worker and save the API token. Details: ' + err.message);
+        alert('Upload failed: ' + err.message);
       }
 
       testimonialForm.reset();
@@ -425,13 +481,44 @@ async function dashboard() {
     };
   }
 
+  const passwordForm = $('#adminPasswordForm');
+  if (passwordForm) {
+    passwordForm.onsubmit = async e => {
+      e.preventDefault();
+      const currentPassword = $('#currentAdminPassword').value;
+      const newPassword = $('#newAdminPassword').value;
+      const confirmPassword = $('#confirmAdminPassword').value;
+
+      if (newPassword !== confirmPassword) {
+        alert('New password and confirm password do not match.');
+        return;
+      }
+
+      if (newPassword.length < 12) {
+        alert('Use a stronger password with at least 12 characters.');
+        return;
+      }
+
+      try {
+        await adminRequest('/change-password', {
+          method: 'POST',
+          json: { currentPassword, newPassword }
+        });
+        passwordForm.reset();
+        alert('Admin password changed successfully. Use the new password next time you log in.');
+      } catch (err) {
+        alert('Password change failed: ' + err.message);
+      }
+    };
+  }
+
   refresh();
   syncClientsFromApi(false);
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  protect();
-  login();
+document.addEventListener('DOMContentLoaded', async () => {
+  await protect();
+  await login();
   tabs();
   dashboard();
 });

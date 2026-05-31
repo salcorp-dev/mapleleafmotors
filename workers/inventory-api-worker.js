@@ -1,19 +1,35 @@
-// Maple Leaf Motors Inventory + Client Media API for Cloudflare Workers
-// Bindings required:
-// 1) INVENTORY_KV: KV namespace
-// 2) VEHICLE_IMAGES: R2 bucket
-// 3) API_TOKEN: secret text variable
+// Maple Leaf Motors Inventory + Clients + Real Admin Auth API for Cloudflare Workers
 //
-// Endpoints:
-// GET    /inventory
-// POST   /inventory       multipart/form-data with "vehicle" JSON and "images" files
-// GET    /clients
-// POST   /clients         multipart/form-data or JSON for delivery photos / testimonials
-// DELETE /clients/<type>/<id>   type = deliveries or testimonials
-// GET    /images/<key>
+// Required bindings:
+// - INVENTORY_KV: KV namespace
+// - VEHICLE_IMAGES: R2 bucket
+// - API_TOKEN: secret text variable for Listing Studio / inventory uploads
+// - ADMIN_PASSWORD: secret text variable for initial admin login
+// - ADMIN_SESSION_SECRET: secret text variable used to sign admin sessions
+//
+// Public:
+// GET /inventory
+// GET /clients
+// GET /images/<key>
+//
+// Listing Studio:
+// POST /inventory              Authorization: Bearer <API_TOKEN>
+//
+// Admin auth:
+// POST /admin/login            { password }
+// GET  /admin/session          Authorization: Bearer <session>
+// POST /admin/change-password  Authorization: Bearer <session>
+//
+// Admin clients:
+// POST   /clients              Authorization: Bearer <admin-session>
+// DELETE /clients/deliveries/<id> or /clients/testimonials/<id>
+//                              Authorization: Bearer <admin-session>
 
 const INVENTORY_KEY = "inventory";
 const CLIENTS_KEY = "clients_data";
+const ADMIN_PASSWORD_HASH_KEY = "admin_password_hash_v1";
+const ADMIN_PASSWORD_SALT_KEY = "admin_password_salt_v1";
+const SESSION_TTL_SECONDS = 60 * 60 * 12; // 12 hours
 
 export default {
   async fetch(request, env) {
@@ -24,13 +40,80 @@ export default {
     }
 
     try {
+      // ─────────────────────────────────────────────
+      // Public endpoints
+      // ─────────────────────────────────────────────
       if (url.pathname === "/inventory" && request.method === "GET") {
         const raw = await env.INVENTORY_KV.get(INVENTORY_KEY);
         return json(raw ? JSON.parse(raw) : []);
       }
 
+      if (url.pathname === "/clients" && request.method === "GET") {
+        return json(await getClients(env));
+      }
+
+      if (url.pathname.startsWith("/images/") && request.method === "GET") {
+        const key = decodeURIComponent(url.pathname.replace("/images/", ""));
+        const obj = await env.VEHICLE_IMAGES.get(key);
+        if (!obj) return json({ error: "Image not found" }, 404);
+        return new Response(obj.body, {
+          headers: {
+            "Content-Type": obj.httpMetadata?.contentType || "image/jpeg",
+            "Cache-Control": "public, max-age=31536000",
+            ...corsHeaders()
+          }
+        });
+      }
+
+      // ─────────────────────────────────────────────
+      // Real backend admin auth
+      // ─────────────────────────────────────────────
+      if (url.pathname === "/admin/login" && request.method === "POST") {
+        const body = await request.json().catch(() => ({}));
+        const password = String(body.password || "");
+        const ok = await checkAdminPassword(env, password);
+        if (!ok) return json({ ok: false, error: "Invalid password" }, 401);
+
+        const expiresAt = Math.floor(Date.now() / 1000) + SESSION_TTL_SECONDS;
+        const token = await signSession(env, { role: "admin", exp: expiresAt });
+
+        return json({
+          ok: true,
+          token,
+          expiresAt,
+          expiresInSeconds: SESSION_TTL_SECONDS
+        });
+      }
+
+      if (url.pathname === "/admin/session" && request.method === "GET") {
+        await requireAdminSession(request, env);
+        return json({ ok: true, role: "admin" });
+      }
+
+      if (url.pathname === "/admin/change-password" && request.method === "POST") {
+        await requireAdminSession(request, env);
+
+        const body = await request.json().catch(() => ({}));
+        const currentPassword = String(body.currentPassword || "");
+        const newPassword = String(body.newPassword || "");
+
+        if (!(await checkAdminPassword(env, currentPassword))) {
+          return json({ ok: false, error: "Current password is incorrect" }, 401);
+        }
+
+        if (newPassword.length < 12) {
+          return json({ ok: false, error: "New password must be at least 12 characters" }, 400);
+        }
+
+        await saveAdminPassword(env, newPassword);
+        return json({ ok: true });
+      }
+
+      // ─────────────────────────────────────────────
+      // Inventory write endpoint, kept for Listing Studio
+      // ─────────────────────────────────────────────
       if (url.pathname === "/inventory" && request.method === "POST") {
-        await requireAuth(request, env);
+        await requireInventoryToken(request, env);
 
         const contentType = request.headers.get("Content-Type") || "";
         let vehicle;
@@ -71,13 +154,11 @@ export default {
         return json({ ok: true, vehicle, count: inventory.length });
       }
 
-      if (url.pathname === "/clients" && request.method === "GET") {
-        const clients = await getClients(env);
-        return json(clients);
-      }
-
+      // ─────────────────────────────────────────────
+      // Admin client uploads
+      // ─────────────────────────────────────────────
       if (url.pathname === "/clients" && request.method === "POST") {
-        await requireAuth(request, env);
+        await requireAdminSession(request, env);
 
         const contentType = request.headers.get("Content-Type") || "";
         let entry = {};
@@ -163,7 +244,7 @@ export default {
       }
 
       if (url.pathname.startsWith("/clients/") && request.method === "DELETE") {
-        await requireAuth(request, env);
+        await requireAdminSession(request, env);
 
         const parts = url.pathname.split("/").filter(Boolean);
         const type = parts[1];
@@ -180,25 +261,16 @@ export default {
         return json({ ok: true, deleted: before - clients[type].length, clients });
       }
 
-      if (url.pathname.startsWith("/images/") && request.method === "GET") {
-        const key = decodeURIComponent(url.pathname.replace("/images/", ""));
-        const obj = await env.VEHICLE_IMAGES.get(key);
-        if (!obj) return json({ error: "Image not found" }, 404);
-        return new Response(obj.body, {
-          headers: {
-            "Content-Type": obj.httpMetadata?.contentType || "image/jpeg",
-            "Cache-Control": "public, max-age=31536000",
-            ...corsHeaders()
-          }
-        });
-      }
-
       return json({ error: "Not found" }, 404);
     } catch (err) {
       return json({ error: err.message || String(err) }, err.status || 500);
     }
   }
 };
+
+// ─────────────────────────────────────────────
+// Data helpers
+// ─────────────────────────────────────────────
 
 async function getClients(env) {
   const raw = await env.INVENTORY_KV.get(CLIENTS_KEY);
@@ -209,7 +281,11 @@ async function getClients(env) {
   };
 }
 
-async function requireAuth(request, env) {
+// ─────────────────────────────────────────────
+// Auth helpers
+// ─────────────────────────────────────────────
+
+async function requireInventoryToken(request, env) {
   const auth = request.headers.get("Authorization") || "";
   if (!env.API_TOKEN || auth !== `Bearer ${env.API_TOKEN}`) {
     const err = new Error("Unauthorized");
@@ -217,6 +293,96 @@ async function requireAuth(request, env) {
     throw err;
   }
 }
+
+async function requireAdminSession(request, env) {
+  const auth = request.headers.get("Authorization") || "";
+  const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+  const payload = await verifySession(env, token);
+
+  if (!payload || payload.role !== "admin") {
+    const err = new Error("Admin login required");
+    err.status = 401;
+    throw err;
+  }
+
+  return payload;
+}
+
+async function checkAdminPassword(env, password) {
+  if (!password) return false;
+
+  const savedHash = await env.INVENTORY_KV.get(ADMIN_PASSWORD_HASH_KEY);
+  const savedSalt = await env.INVENTORY_KV.get(ADMIN_PASSWORD_SALT_KEY);
+
+  if (savedHash && savedSalt) {
+    const testHash = await sha256(`${savedSalt}:${password}`);
+    return timingSafeEqual(testHash, savedHash);
+  }
+
+  return !!env.ADMIN_PASSWORD && password === env.ADMIN_PASSWORD;
+}
+
+async function saveAdminPassword(env, password) {
+  const salt = crypto.randomUUID();
+  const hash = await sha256(`${salt}:${password}`);
+  await env.INVENTORY_KV.put(ADMIN_PASSWORD_SALT_KEY, salt);
+  await env.INVENTORY_KV.put(ADMIN_PASSWORD_HASH_KEY, hash);
+}
+
+async function signSession(env, payload) {
+  const body = base64url(JSON.stringify(payload));
+  const sig = await hmac(env.ADMIN_SESSION_SECRET || env.API_TOKEN || env.ADMIN_PASSWORD, body);
+  return `${body}.${sig}`;
+}
+
+async function verifySession(env, token) {
+  if (!token || !token.includes(".")) return null;
+
+  const [body, sig] = token.split(".");
+  const expected = await hmac(env.ADMIN_SESSION_SECRET || env.API_TOKEN || env.ADMIN_PASSWORD, body);
+  if (!timingSafeEqual(sig, expected)) return null;
+
+  let payload;
+  try {
+    payload = JSON.parse(atobUrl(body));
+  } catch {
+    return null;
+  }
+
+  if (!payload.exp || payload.exp < Math.floor(Date.now() / 1000)) return null;
+  return payload;
+}
+
+async function hmac(secret, value) {
+  if (!secret) secret = "fallback-change-this-secret";
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(value));
+  return bufferToBase64Url(sig);
+}
+
+async function sha256(value) {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+  return bufferToHex(digest);
+}
+
+function timingSafeEqual(a, b) {
+  a = String(a || "");
+  b = String(b || "");
+  if (a.length !== b.length) return false;
+  let out = 0;
+  for (let i = 0; i < a.length; i++) out |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return out === 0;
+}
+
+// ─────────────────────────────────────────────
+// Utility helpers
+// ─────────────────────────────────────────────
 
 function makeSlug(value) {
   return String(value || "")
@@ -246,4 +412,29 @@ function json(data, status = 200) {
     status,
     headers: { "Content-Type": "application/json", ...corsHeaders() }
   });
+}
+
+function base64url(value) {
+  const raw = typeof value === "string" ? value : String(value);
+  return btoa(unescape(encodeURIComponent(raw)))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/g, "");
+}
+
+function atobUrl(value) {
+  value = value.replace(/-/g, "+").replace(/_/g, "/");
+  while (value.length % 4) value += "=";
+  return decodeURIComponent(escape(atob(value)));
+}
+
+function bufferToBase64Url(buffer) {
+  let binary = "";
+  const bytes = new Uint8Array(buffer);
+  for (const b of bytes) binary += String.fromCharCode(b);
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
+function bufferToHex(buffer) {
+  return [...new Uint8Array(buffer)].map(b => b.toString(16).padStart(2, "0")).join("");
 }
