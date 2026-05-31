@@ -1,5 +1,5 @@
 const ADMIN_SESSION_KEY = 'mlm_admin_session';
-const STATUSES = ['NEW LEAD','CONTACTED','APPLICATION SENT','DEALERTRACK SUBMITTED','APPROVED','VEHICLE SELECTED','DELIVERED','LOST'];
+const STATUSES = ['NEW LEAD','CONTACTED','APPLICATION SENT','DEALERTRACK SUBMITTED','APPROVED','NEEDS COSIGNER','VEHICLE SELECTED','DELIVERED','LOST'];
 
 const $ = (s, p = document) => p.querySelector(s);
 const $$ = (s, p = document) => [...p.querySelectorAll(s)];
@@ -137,6 +137,7 @@ function tabs() {
       t.classList.add('active');
       const section = $('#' + t.dataset.tab);
       if (section) section.classList.add('active');
+      if (t.dataset.tab === 'leads') loadFinanceLeads();
     };
   });
 
@@ -197,6 +198,14 @@ async function deleteClientFromApi(config, type, id) {
   if (!res.ok || payload.error) throw new Error(payload.error || `Delete failed (${res.status})`);
   return payload;
 }
+
+
+let FINANCE_LEADS = [];
+function csvEscape(v){const s=String(v??'');return /[",\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s;}
+async function loadFinanceLeads(){if(!$('#financeLeadRows'))return;try{const res=await adminRequest('/leads',{method:'GET'});FINANCE_LEADS=Array.isArray(res.leads)?res.leads:[];renderFinanceLeads()}catch(err){$('#financeLeadRows').innerHTML=`<tr><td colspan="5">Could not load leads: ${escapeHtml(err.message)}</td></tr>`}}
+function filteredFinanceLeads(){const q=($('#leadSearch')?.value||'').toLowerCase().trim();const status=$('#leadStatusFilter')?.value||'';return FINANCE_LEADS.filter(l=>{const t=[l.firstName,l.lastName,l.phone,l.email,l.city,l.vehicleType,l.creditSituation,l.incomeType,l.budget].join(' ').toLowerCase();return(!q||t.includes(q))&&(!status||l.status===status)})}
+function renderFinanceLeads(){if(!$('#financeLeadRows'))return;$('#leadStatTotal').textContent=FINANCE_LEADS.length;$('#leadStatNew').textContent=FINANCE_LEADS.filter(l=>l.status==='NEW LEAD').length;$('#leadStatApproved').textContent=FINANCE_LEADS.filter(l=>l.status==='APPROVED').length;const rows=filteredFinanceLeads();$('#financeLeadRows').innerHTML=rows.map(l=>`<tr class="${l.status==='NEW LEAD'?'lead-row-new':''}"><td><strong>${escapeHtml(l.firstName)} ${escapeHtml(l.lastName)}</strong><br><a href="tel:${escapeHtml(l.phone)}">${escapeHtml(l.phone)}</a><br><a href="mailto:${escapeHtml(l.email)}">${escapeHtml(l.email)}</a><br><small>${escapeHtml(l.city)}, ${escapeHtml(l.province)}</small></td><td><b>${escapeHtml(l.vehicleType)}</b><br>Credit: ${escapeHtml(l.creditSituation)}<br>Income: ${escapeHtml(l.incomeType)}<br>Budget: ${escapeHtml(l.budget)}<br>Best time: ${escapeHtml(l.bestTime)} / ${escapeHtml(l.contactPreference)}</td><td><span class="badge-source">${escapeHtml(l.source||'website')}</span><br><small>${escapeHtml((l.createdAt||'').replace('T',' ').slice(0,16))}</small><br>${l.campaign?`<small>Campaign: ${escapeHtml(l.campaign)}</small><br>`:''}${l.placement?`<small>Placement: ${escapeHtml(l.placement)}</small>`:''}</td><td><select data-lead-status="${escapeHtml(l.id)}">${STATUSES.map(s=>`<option ${l.status===s?'selected':''}>${s}</option>`).join('')}</select><textarea class="lead-note-box" data-lead-notes="${escapeHtml(l.id)}" placeholder="Internal notes">${escapeHtml(l.notes||'')}</textarea><button class="btn small light" data-save-lead="${escapeHtml(l.id)}">Save</button></td><td><button class="btn small light" data-delete-lead="${escapeHtml(l.id)}">Delete</button></td></tr>`).join('')||'<tr><td colspan="5">No finance leads yet.</td></tr>';$$('[data-save-lead]').forEach(btn=>{btn.onclick=async()=>{const id=btn.dataset.saveLead;const status=$(`[data-lead-status="${CSS.escape(id)}"]`).value;const notes=$(`[data-lead-notes="${CSS.escape(id)}"]`).value;try{await adminRequest(`/leads/${encodeURIComponent(id)}`,{method:'PATCH',json:{status,notes}});await loadFinanceLeads()}catch(e){alert('Could not save lead: '+e.message)}}});$$('[data-delete-lead]').forEach(btn=>{btn.onclick=async()=>{if(!confirm('Delete this lead?'))return;try{await adminRequest(`/leads/${encodeURIComponent(btn.dataset.deleteLead)}`,{method:'DELETE'});await loadFinanceLeads()}catch(e){alert('Could not delete lead: '+e.message)}}})}
+function exportLeadsCsv(){const rows=[['Created','Status','First Name','Last Name','Phone','Email','City','Province','Vehicle Type','Credit Situation','Income Type','Budget','Best Time','Contact Preference','Notes','Source','Campaign','Adset','Placement','FBCLID']];FINANCE_LEADS.forEach(l=>rows.push([l.createdAt,l.status,l.firstName,l.lastName,l.phone,l.email,l.city,l.province,l.vehicleType,l.creditSituation,l.incomeType,l.budget,l.bestTime,l.contactPreference,l.notes,l.source,l.campaign,l.adset,l.placement,l.fbclid]));const csv=rows.map(r=>r.map(csvEscape).join(',')).join('\n');const blob=new Blob([csv],{type:'text/csv'});const x=document.createElement('a');x.href=URL.createObjectURL(blob);x.download=`maple-leaf-finance-leads-${new Date().toISOString().slice(0,10)}.csv`;x.click()}
 
 async function dashboard() {
   if (!$('#leadRows')) return;
@@ -512,6 +521,12 @@ async function dashboard() {
     };
   }
 
+
+  if ($('#refreshFinanceLeads')) $('#refreshFinanceLeads').onclick = loadFinanceLeads;
+  if ($('#exportFinanceLeads')) $('#exportFinanceLeads').onclick = exportLeadsCsv;
+  if ($('#leadSearch')) $('#leadSearch').oninput = renderFinanceLeads;
+  if ($('#leadStatusFilter')) $('#leadStatusFilter').onchange = renderFinanceLeads;
+  await loadFinanceLeads();
   refresh();
   syncClientsFromApi(false);
 }

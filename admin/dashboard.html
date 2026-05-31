@@ -194,6 +194,14 @@
       </div>
     </section>
 
+
+    <section id="leads" class="admin-section">
+      <div class="lead-toolbar"><div><h2 style="margin-bottom:6px;">Finance Leads</h2><p class="sub" style="margin-bottom:0;">Leads from the Get Approved funnel. Update status, add notes, and export CSV.</p></div><div style="display:flex;gap:10px;flex-wrap:wrap;"><button class="btn btn-sm btn-outline" id="refreshFinanceLeads" type="button">Refresh Leads</button><button class="btn btn-sm" id="exportFinanceLeads" type="button">Export CSV</button><a class="btn btn-sm btn-outline" href="../get-approved.html" target="_blank">Open Funnel</a></div></div>
+      <div class="lead-card-grid"><div class="lead-stat-card"><strong id="leadStatTotal">0</strong><span>Total leads</span></div><div class="lead-stat-card"><strong id="leadStatNew">0</strong><span>New leads</span></div><div class="lead-stat-card"><strong id="leadStatApproved">0</strong><span>Approved</span></div></div>
+      <div class="lead-filters" style="margin-bottom:14px;display:flex;gap:8px;flex-wrap:wrap;"><input id="leadSearch" placeholder="Search name, phone, email, city..." style="max-width:360px;"><select id="leadStatusFilter" style="max-width:220px;"><option value="">All statuses</option><option>NEW LEAD</option><option>CONTACTED</option><option>APPLICATION SENT</option><option>DEALERTRACK SUBMITTED</option><option>APPROVED</option><option>NEEDS COSIGNER</option><option>VEHICLE SELECTED</option><option>DELIVERED</option><option>LOST</option></select></div>
+      <table class="table"><thead><tr><th>Lead</th><th>Finance Details</th><th>Tracking</th><th>Status / Notes</th><th>Action</th></tr></thead><tbody id="financeLeadRows"></tbody></table>
+    </section>
+
     <section id="settings" class="admin-section">
 
       <div class="card" style="padding:24px;margin-bottom:20px;">

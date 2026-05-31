@@ -1,6 +1,7 @@
 {
   "inventoryApiUrl": "https://maple-leaf-inventory.sal96wpg.workers.dev/inventory",
-  "notes": "Live Cloudflare Worker inventory, client uploads, and real backend admin auth for Maple Leaf Motors.",
+  "notes": "Live Cloudflare Worker inventory, client uploads, admin auth, and finance lead funnel for Maple Leaf Motors.",
   "clientsApiUrl": "https://maple-leaf-inventory.sal96wpg.workers.dev/clients",
-  "adminApiUrl": "https://maple-leaf-inventory.sal96wpg.workers.dev/admin"
+  "adminApiUrl": "https://maple-leaf-inventory.sal96wpg.workers.dev/admin",
+  "leadsApiUrl": "https://maple-leaf-inventory.sal96wpg.workers.dev/leads"
 }

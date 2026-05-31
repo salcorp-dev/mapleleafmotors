@@ -27,6 +27,7 @@
 
 const INVENTORY_KEY = "inventory";
 const CLIENTS_KEY = "clients_data";
+const LEADS_KEY = "finance_leads_v1";
 const ADMIN_PASSWORD_HASH_KEY = "admin_password_hash_v1";
 const ADMIN_PASSWORD_SALT_KEY = "admin_password_salt_v1";
 const SESSION_TTL_SECONDS = 60 * 60 * 12; // 12 hours
@@ -50,6 +51,18 @@ export default {
 
       if (url.pathname === "/clients" && request.method === "GET") {
         return json(await getClients(env));
+      }
+
+
+
+      if (url.pathname === "/leads" && request.method === "POST") {
+        const body = await request.json().catch(() => ({}));
+        const input = body.lead || body;
+        const lead = cleanLead(input, request);
+        const leads = await getLeads(env);
+        leads.unshift(lead);
+        await env.INVENTORY_KV.put(LEADS_KEY, JSON.stringify(leads));
+        return json({ ok: true, leadId: lead.id });
       }
 
       if (url.pathname.startsWith("/images/") && request.method === "GET") {
@@ -107,6 +120,37 @@ export default {
 
         await saveAdminPassword(env, newPassword);
         return json({ ok: true });
+      }
+
+
+
+      if (url.pathname === "/admin/leads" && request.method === "GET") {
+        await requireAdminSession(request, env);
+        return json({ ok: true, leads: await getLeads(env) });
+      }
+
+      if (url.pathname.startsWith("/admin/leads/") && request.method === "PATCH") {
+        await requireAdminSession(request, env);
+        const id = decodeURIComponent(url.pathname.replace("/admin/leads/", ""));
+        const body = await request.json().catch(() => ({}));
+        const leads = await getLeads(env);
+        const index = leads.findIndex(x => x.id === id);
+        if (index < 0) return json({ error: "Lead not found" }, 404);
+        if (Object.prototype.hasOwnProperty.call(body, "status")) leads[index].status = body.status;
+        if (Object.prototype.hasOwnProperty.call(body, "notes")) leads[index].notes = body.notes;
+        if (Object.prototype.hasOwnProperty.call(body, "assignedTo")) leads[index].assignedTo = body.assignedTo;
+        leads[index].updatedAt = new Date().toISOString();
+        await env.INVENTORY_KV.put(LEADS_KEY, JSON.stringify(leads));
+        return json({ ok: true, lead: leads[index] });
+      }
+
+      if (url.pathname.startsWith("/admin/leads/") && request.method === "DELETE") {
+        await requireAdminSession(request, env);
+        const id = decodeURIComponent(url.pathname.replace("/admin/leads/", ""));
+        const leads = await getLeads(env);
+        const next = leads.filter(x => x.id !== id);
+        await env.INVENTORY_KV.put(LEADS_KEY, JSON.stringify(next));
+        return json({ ok: true, deleted: leads.length - next.length, leads: next });
       }
 
       // ─────────────────────────────────────────────
@@ -281,6 +325,40 @@ async function getClients(env) {
   };
 }
 
+
+
+async function getLeads(env) {
+  const raw = await env.INVENTORY_KV.get(LEADS_KEY);
+  return raw ? JSON.parse(raw) : [];
+}
+
+function cleanLead(input, request) {
+  const now = new Date().toISOString();
+  const id = `lead-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
+  const text = (v, max = 500) => String(v || "").trim().slice(0, max);
+  const lead = {
+    id, status: "NEW LEAD",
+    firstName: text(input.firstName, 80), lastName: text(input.lastName, 80),
+    phone: text(input.phone, 40), email: text(input.email, 120),
+    city: text(input.city, 80), province: text(input.province, 80),
+    vehicleType: text(input.vehicleType, 80), creditSituation: text(input.creditSituation, 120),
+    incomeType: text(input.incomeType, 100), budget: text(input.budget, 80),
+    bestTime: text(input.bestTime, 80), contactPreference: text(input.contactPreference, 80),
+    notes: text(input.notes, 1000), consent: !!input.consent,
+    source: text(input.source || "website", 100), campaign: text(input.campaign, 160),
+    adset: text(input.adset, 160), placement: text(input.placement, 120), fbclid: text(input.fbclid, 250),
+    pageUrl: text(input.pageUrl, 500), ipHint: request.headers.get("CF-Connecting-IP") || "",
+    userAgent: text(request.headers.get("User-Agent"), 250),
+    createdAt: now, updatedAt: now, assignedTo: ""
+  };
+  if (!lead.firstName || !lead.phone || !lead.email || !lead.consent) {
+    const err = new Error("Missing required lead fields");
+    err.status = 400;
+    throw err;
+  }
+  return lead;
+}
+
 // ─────────────────────────────────────────────
 // Auth helpers
 // ─────────────────────────────────────────────
@@ -403,7 +481,7 @@ function corsHeaders() {
   return {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
-    "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS"
+    "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS"
   };
 }
 
