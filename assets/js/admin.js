@@ -549,7 +549,7 @@ async function dashboard() {
   data.deliveries = data.deliveries || [];
   data.testimonials = data.testimonials || [];
 
-  async function syncClientsFromApi(showAlert = false) {
+  window.syncClientsFromApi = window.syncClientsFromApi = async function syncClientsFromApi(showAlert = false) {
     const clients = await fetchClientsFromApi(config);
     if (clients) {
       data.deliveries = Array.isArray(clients.deliveries) ? clients.deliveries : [];
@@ -573,7 +573,7 @@ async function dashboard() {
     el.classList.toggle('warn', !ok);
   }
 
-  function refresh() {
+  window.refresh = window.refresh = function refresh() {
     saveData(data);
     if ($('#totalLeads')) $('#totalLeads').textContent = leads().length;
     if ($('#totalVehicles')) $('#totalVehicles').textContent = data.inventory.length;

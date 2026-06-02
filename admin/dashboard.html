@@ -789,6 +789,7 @@
           <input id="adminDeliveryImages" name="images" type="file" accept="image/*" multiple>
           <div class="client-preview" id="adminDeliveryPreview"></div>
           <button class="btn btn-full" type="submit">Upload Delivery</button>
+          <p id="deliveryUploadStatus" class="sub" style="margin-top:10px;"></p>
         </form>
 
         <form id="adminTestimonialForm" class="admin-card">
@@ -802,6 +803,7 @@
           </select>
           <textarea name="text" placeholder="Review text" required></textarea>
           <button class="btn btn-full" type="submit">Upload Review</button>
+          <p id="reviewUploadStatus" class="sub" style="margin-top:10px;"></p>
         </form>
       </div>
 
@@ -1652,6 +1654,180 @@ document.querySelectorAll('.tab').forEach(t => {
   });
 
   window.MLM_FORCE_CALC_PRICE_AUTOFILL = forceFillCalculatorPrice;
+})();
+</script>
+
+
+<script>
+/* v10.21 Delivery / Client Upload Fix */
+(function(){
+  "use strict";
+
+  const ADMIN_SESSION_KEY = "mlm_admin_session";
+
+  function qs(s, p=document){ return p.querySelector(s); }
+  function qsa(s, p=document){ return Array.from(p.querySelectorAll(s)); }
+  function token(){ return sessionStorage.getItem(ADMIN_SESSION_KEY) || ""; }
+
+  async function loadConfig(){
+    try {
+      const r = await fetch("../assets/data/config.json?fresh=1021", { cache:"no-store" });
+      if (r.ok) return await r.json();
+    } catch(e) {}
+    return { clientsApiUrl: "https://maple-leaf-inventory.sal96wpg.workers.dev/clients" };
+  }
+
+  async function clientsBase(){
+    const cfg = await loadConfig();
+    return (cfg.clientsApiUrl || "https://maple-leaf-inventory.sal96wpg.workers.dev/clients").replace(/\/$/, "");
+  }
+
+  function setStatus(id, message, ok){
+    const el = qs(id);
+    if (!el) return;
+    el.textContent = message || "";
+    el.style.color = ok ? "#067647" : "#b42318";
+  }
+
+  async function uploadClientForm(form, type){
+    const statusId = type === "delivery" ? "#deliveryUploadStatus" : "#reviewUploadStatus";
+    const button = form.querySelector('button[type="submit"]');
+    const originalText = button ? button.textContent : "";
+
+    const fd = new FormData(form);
+    fd.set("type", type);
+    fd.set("createdAt", new Date().toISOString());
+
+    if (type === "delivery") {
+      const files = qs("#adminDeliveryImages")?.files || [];
+      if (!files.length) throw new Error("Please choose at least one delivery photo.");
+    }
+
+    if (!token()) throw new Error("Admin session expired. Please log in again.");
+
+    setStatus(statusId, type === "delivery" ? "Uploading delivery photo..." : "Uploading review...", true);
+    if (button) {
+      button.disabled = true;
+      button.textContent = "Uploading...";
+    }
+
+    try {
+      const base = await clientsBase();
+      const res = await fetch(base, {
+        method: "POST",
+        headers: { Authorization: "Bearer " + token() },
+        body: fd
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data.error) throw new Error(data.error || "Upload failed (" + res.status + ")");
+
+      setStatus(statusId, type === "delivery" ? "Delivery uploaded successfully." : "Review uploaded successfully.", true);
+
+      form.reset();
+
+      if (type === "delivery") {
+        const preview = qs("#adminDeliveryPreview");
+        if (preview) preview.innerHTML = "";
+      }
+
+      if (typeof window.refresh === "function") {
+        try { window.refresh(); } catch(e) {}
+      }
+
+      const clientsTab = qs('.tab[data-tab="clients"]');
+      const clientsSection = qs("#clients");
+      if (clientsTab && clientsSection) {
+        qsa(".tab").forEach(t => t.classList.remove("active"));
+        qsa(".admin-section").forEach(s => s.classList.remove("active"));
+        clientsTab.classList.add("active");
+        clientsSection.classList.add("active");
+      }
+
+      if (typeof window.syncClientsFromApi === "function") {
+        try { await window.syncClientsFromApi(false); } catch(e) {}
+      }
+
+      return data;
+    } finally {
+      if (button) {
+        button.disabled = false;
+        button.textContent = originalText;
+      }
+    }
+  }
+
+  function bindPreview(){
+    const input = qs("#adminDeliveryImages");
+    const preview = qs("#adminDeliveryPreview");
+    if (!input || !preview || input.dataset.v1021PreviewBound) return;
+
+    input.dataset.v1021PreviewBound = "1";
+    input.addEventListener("change", function(){
+      preview.innerHTML = "";
+      Array.from(input.files || []).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const img = document.createElement("img");
+          img.src = reader.result;
+          preview.appendChild(img);
+        };
+        reader.readAsDataURL(file);
+      });
+    });
+  }
+
+  function bindUploadForms(){
+    bindPreview();
+
+    const deliveryForm = qs("#adminDeliveryForm");
+    if (deliveryForm && !deliveryForm.dataset.v1021Bound) {
+      deliveryForm.dataset.v1021Bound = "1";
+
+      deliveryForm.addEventListener("submit", async function(e){
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+
+        try {
+          await uploadClientForm(deliveryForm, "delivery");
+        } catch(err) {
+          setStatus("#deliveryUploadStatus", err.message || "Upload failed.", false);
+          alert("Delivery upload failed: " + (err.message || "Unknown error"));
+        }
+      }, true);
+    }
+
+    const reviewForm = qs("#adminTestimonialForm");
+    if (reviewForm && !reviewForm.dataset.v1021Bound) {
+      reviewForm.dataset.v1021Bound = "1";
+
+      reviewForm.addEventListener("submit", async function(e){
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+
+        try {
+          await uploadClientForm(reviewForm, "testimonial");
+        } catch(err) {
+          setStatus("#reviewUploadStatus", err.message || "Upload failed.", false);
+          alert("Review upload failed: " + (err.message || "Unknown error"));
+        }
+      }, true);
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", bindUploadForms);
+  document.addEventListener("click", function(e){
+    const tab = e.target.closest('[data-tab="clients"], [data-goto="clients"]');
+    if (tab) setTimeout(bindUploadForms, 50);
+  }, true);
+
+  setTimeout(bindUploadForms, 100);
+  setTimeout(bindUploadForms, 500);
+  setTimeout(bindUploadForms, 1200);
+
+  window.MLM_BIND_CLIENT_UPLOADS = bindUploadForms;
 })();
 </script>
 

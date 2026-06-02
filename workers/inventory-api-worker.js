@@ -306,6 +306,7 @@ export default {
         const type = String(entry.type || "").toLowerCase();
 
         if (type === "delivery" || type === "deliveries") {
+          if (!files.length && (!Array.isArray(entry.images) || !entry.images.length)) return json({ error: "Please upload at least one delivery image." }, 400);
           entry.id = entry.id || `delivery-${Date.now()}`;
           entry.images = Array.isArray(entry.images) ? entry.images : [];
 
