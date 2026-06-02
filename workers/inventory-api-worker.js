@@ -62,7 +62,6 @@ export default {
           try { await requireAdminSession(request, env); isAdmin = true; } catch (e) { isAdmin = false; }
         }
         if (isAdmin) return json(clients);
-
         return json({
           deliveries: clients.deliveries.filter(x => x.archiveHidden !== true),
           testimonials: clients.testimonials.filter(x => x.archiveHidden !== true)

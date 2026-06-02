@@ -770,7 +770,7 @@
             <p class="admin-help">Uploads are authorized by your real admin login session. No API token is stored in the website files.</p>
           </div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-            <span id="clientsApiStatus" class="status-chip warn">Offline/local mode</span>
+            <span id="clientsApiStatus" class="status-chip warn">Checking connection</span>
             <button class="btn btn-sm btn-outline" id="refreshClientsData" type="button">Refresh From API</button>
             <a class="btn btn-sm btn-outline" href="../clients.html" target="_blank">View Clients Page</a>
           </div>
@@ -856,7 +856,7 @@
   </main>
 </div>
 
-<script src="../assets/js/admin.js?v=10.22"></script>
+<script src="../assets/js/admin.js?v=10.24"></script>
 
 <script>
 /* v10.20 Direct Live Inventory Save Binder + Force Calculator Price Autofill */
@@ -1655,6 +1655,276 @@ document.querySelectorAll('.tab').forEach(t => {
   });
 
   window.MLM_FORCE_CALC_PRICE_AUTOFILL = forceFillCalculatorPrice;
+})();
+</script>
+
+
+
+<script>
+/* v10.24 Direct Clients Table Renderer + Connection Status Fix */
+(function(){
+  "use strict";
+
+  const ADMIN_SESSION_KEY = "mlm_admin_session";
+  let CLIENT_CACHE = { deliveries: [], testimonials: [] };
+
+  function qs(s, p=document){ return p.querySelector(s); }
+  function qsa(s, p=document){ return Array.from(p.querySelectorAll(s)); }
+  function token(){ return sessionStorage.getItem(ADMIN_SESSION_KEY) || ""; }
+  function esc(v){ return String(v ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c])); }
+
+  async function loadConfig(){
+    try {
+      const r = await fetch("../assets/data/config.json?fresh=1024", { cache:"no-store" });
+      if (r.ok) return await r.json();
+    } catch(e) {}
+    return { clientsApiUrl: "https://maple-leaf-inventory.sal96wpg.workers.dev/clients" };
+  }
+
+  async function clientsBase(){
+    const cfg = await loadConfig();
+    return (cfg.clientsApiUrl || "https://maple-leaf-inventory.sal96wpg.workers.dev/clients").replace(/\/$/, "");
+  }
+
+  function setApiStatus(ok, msg){
+    const el = qs("#clientsApiStatus");
+    if (!el) return;
+    el.textContent = ok ? (msg || "Website API connected") : (msg || "Could not connect to API");
+    el.classList.toggle("ok", !!ok);
+    el.classList.toggle("warn", !ok);
+    el.style.background = ok ? "#dcfce7" : "#fff7ed";
+    el.style.color = ok ? "#166534" : "#9a3412";
+  }
+
+  async function clientRequest(path = "", opts = {}){
+    const base = await clientsBase();
+
+    // Avoid unnecessary CORS/preflight on simple GET.
+    const headers = Object.assign({}, opts.headers || {});
+    if (token() && opts.auth !== false) headers.Authorization = "Bearer " + token();
+
+    if (opts.json) {
+      headers["Content-Type"] = "application/json";
+      opts.body = JSON.stringify(opts.json);
+      delete opts.json;
+    }
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 20000);
+
+    try {
+      const res = await fetch(base + path, Object.assign({}, opts, {
+        headers,
+        cache:"no-store",
+        signal: controller.signal
+      }));
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data.error) throw new Error(data.error || "Client request failed (" + res.status + ")");
+      return data;
+    } catch(e) {
+      if (e.name === "AbortError") throw new Error("Request timed out. Check Worker deployment.");
+      throw e;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  function renderDeliveries(){
+    const tbody = qs("#deliveryRows");
+    if (!tbody) return;
+
+    const deliveries = Array.isArray(CLIENT_CACHE.deliveries) ? CLIENT_CACHE.deliveries : [];
+    tbody.innerHTML = deliveries.map(d => {
+      const archived = d.archiveHidden === true || String(d.status || "").toLowerCase() === "archived";
+      const images = Array.isArray(d.images) ? d.images : [];
+      const thumb = images.length
+        ? `<img src="${esc(images[0])}" alt="" style="width:82px;height:52px;object-fit:cover;border-radius:8px;border:1px solid #e5e7eb;">`
+        : `<small>No photo</small>`;
+
+      return `<tr style="${archived ? 'opacity:.55;background:#f8fafc;' : ''}">
+        <td><strong>${esc(d.clientName || "Happy client")}</strong>${archived ? '<br><small>Archived</small>' : ''}</td>
+        <td>${esc(d.vehicle || "")}${d.quote ? `<br><small>${esc(d.quote)}</small>` : ""}</td>
+        <td>${thumb}<br><small>${images.length} photo${images.length === 1 ? "" : "s"}</small></td>
+        <td>
+          <button class="btn small light" type="button" data-v1024-edit-delivery="${esc(d.id)}">Edit</button>
+          <button class="btn small light" type="button" data-v1024-archive-delivery="${esc(d.id)}">${archived ? "Restore" : "Archive"}</button>
+          <button class="btn small light" type="button" data-v1024-delete-delivery="${esc(d.id)}">Delete</button>
+        </td>
+      </tr>`;
+    }).join("") || '<tr><td colspan="4">No delivery photos found. Upload one, then click Refresh From API.</td></tr>';
+
+    qsa("[data-v1024-edit-delivery]").forEach(btn => {
+      btn.onclick = async () => {
+        const id = btn.dataset.v1024EditDelivery;
+        const item = CLIENT_CACHE.deliveries.find(x => String(x.id) === String(id));
+        if (!item) return;
+        const clientName = prompt("Client name:", item.clientName || "") ?? item.clientName;
+        const vehicle = prompt("Vehicle:", item.vehicle || "") ?? item.vehicle;
+        const quote = prompt("Optional quote:", item.quote || "") ?? item.quote;
+        const rating = Number(prompt("Rating 1-5:", String(item.rating || 5)) || item.rating || 5);
+        try {
+          await clientRequest("/deliveries/" + encodeURIComponent(id), {
+            method:"PATCH",
+            json:{ clientName, vehicle, quote, rating }
+          });
+          await refreshClientTables();
+        } catch(e) { alert("Could not edit delivery: " + e.message); }
+      };
+    });
+
+    qsa("[data-v1024-archive-delivery]").forEach(btn => {
+      btn.onclick = async () => {
+        const id = btn.dataset.v1024ArchiveDelivery;
+        const item = CLIENT_CACHE.deliveries.find(x => String(x.id) === String(id));
+        if (!item) return;
+        const archived = item.archiveHidden === true || String(item.status || "").toLowerCase() === "archived";
+        try {
+          await clientRequest("/deliveries/" + encodeURIComponent(id), {
+            method:"PATCH",
+            json:{ archiveHidden:!archived, status:!archived ? "archived" : "active" }
+          });
+          await refreshClientTables();
+        } catch(e) { alert("Could not archive delivery: " + e.message); }
+      };
+    });
+
+    qsa("[data-v1024-delete-delivery]").forEach(btn => {
+      btn.onclick = async () => {
+        const id = btn.dataset.v1024DeleteDelivery;
+        if (!confirm("Delete this delivery photo post?")) return;
+        try {
+          await clientRequest("/deliveries/" + encodeURIComponent(id), { method:"DELETE" });
+          await refreshClientTables();
+        } catch(e) { alert("Could not delete delivery: " + e.message); }
+      };
+    });
+  }
+
+  function renderReviews(){
+    const tbody = qs("#testimonialRows");
+    if (!tbody) return;
+
+    const testimonials = Array.isArray(CLIENT_CACHE.testimonials) ? CLIENT_CACHE.testimonials : [];
+    tbody.innerHTML = testimonials.map(t => {
+      const archived = t.archiveHidden === true || String(t.status || "").toLowerCase() === "archived";
+      const rating = Math.max(1, Math.min(5, Number(t.rating || 5)));
+
+      return `<tr style="${archived ? 'opacity:.55;background:#f8fafc;' : ''}">
+        <td><strong>${esc(t.name || "Customer")}</strong>${archived ? '<br><small>Archived</small>' : ''}</td>
+        <td>${"★".repeat(rating)}</td>
+        <td>${esc(t.text || "")}</td>
+        <td>
+          <button class="btn small light" type="button" data-v1024-edit-review="${esc(t.id)}">Edit</button>
+          <button class="btn small light" type="button" data-v1024-archive-review="${esc(t.id)}">${archived ? "Restore" : "Archive"}</button>
+          <button class="btn small light" type="button" data-v1024-delete-review="${esc(t.id)}">Delete</button>
+        </td>
+      </tr>`;
+    }).join("") || '<tr><td colspan="4">No reviews found.</td></tr>';
+
+    qsa("[data-v1024-edit-review]").forEach(btn => {
+      btn.onclick = async () => {
+        const id = btn.dataset.v1024EditReview;
+        const item = CLIENT_CACHE.testimonials.find(x => String(x.id) === String(id));
+        if (!item) return;
+        const name = prompt("Customer name:", item.name || "") ?? item.name;
+        const text = prompt("Review text:", item.text || "") ?? item.text;
+        const rating = Number(prompt("Rating 1-5:", String(item.rating || 5)) || item.rating || 5);
+        try {
+          await clientRequest("/testimonials/" + encodeURIComponent(id), {
+            method:"PATCH",
+            json:{ name, text, rating }
+          });
+          await refreshClientTables();
+        } catch(e) { alert("Could not edit review: " + e.message); }
+      };
+    });
+
+    qsa("[data-v1024-archive-review]").forEach(btn => {
+      btn.onclick = async () => {
+        const id = btn.dataset.v1024ArchiveReview;
+        const item = CLIENT_CACHE.testimonials.find(x => String(x.id) === String(id));
+        if (!item) return;
+        const archived = item.archiveHidden === true || String(item.status || "").toLowerCase() === "archived";
+        try {
+          await clientRequest("/testimonials/" + encodeURIComponent(id), {
+            method:"PATCH",
+            json:{ archiveHidden:!archived, status:!archived ? "archived" : "active" }
+          });
+          await refreshClientTables();
+        } catch(e) { alert("Could not archive review: " + e.message); }
+      };
+    });
+
+    qsa("[data-v1024-delete-review]").forEach(btn => {
+      btn.onclick = async () => {
+        const id = btn.dataset.v1024DeleteReview;
+        if (!confirm("Delete this review?")) return;
+        try {
+          await clientRequest("/testimonials/" + encodeURIComponent(id), { method:"DELETE" });
+          await refreshClientTables();
+        } catch(e) { alert("Could not delete review: " + e.message); }
+      };
+    });
+  }
+
+  async function refreshClientTables(){
+    if (!qs("#deliveryRows") && !qs("#testimonialRows")) return;
+
+    setApiStatus(false, "Loading clients...");
+    try {
+      // First try with admin token so archived records are visible in admin.
+      let data;
+      try {
+        data = await clientRequest("", { method:"GET" });
+      } catch(adminErr) {
+        // If auth/preflight is the issue, public GET still lets table show active posts.
+        data = await clientRequest("", { method:"GET", auth:false });
+      }
+
+      CLIENT_CACHE = {
+        deliveries: Array.isArray(data.deliveries) ? data.deliveries : [],
+        testimonials: Array.isArray(data.testimonials) ? data.testimonials : []
+      };
+
+      setApiStatus(true, `Website API connected · ${CLIENT_CACHE.deliveries.length} deliveries · ${CLIENT_CACHE.testimonials.length} reviews`);
+      renderDeliveries();
+      renderReviews();
+    } catch(e) {
+      setApiStatus(false, "API error: " + e.message);
+      const d = qs("#deliveryRows");
+      const r = qs("#testimonialRows");
+      if (d) d.innerHTML = '<tr><td colspan="4">Could not load delivery photos: ' + esc(e.message) + '</td></tr>';
+      if (r) r.innerHTML = '<tr><td colspan="4">Could not load reviews: ' + esc(e.message) + '</td></tr>';
+    }
+  }
+
+  function bind(){
+    const refreshBtn = qs("#refreshClientsData");
+    if (refreshBtn && !refreshBtn.dataset.v1024Bound) {
+      refreshBtn.dataset.v1024Bound = "1";
+      refreshBtn.addEventListener("click", function(e){
+        e.preventDefault();
+        e.stopPropagation();
+        setTimeout(refreshClientTables, 10);
+      }, true);
+    }
+
+    refreshClientTables();
+  }
+
+  document.addEventListener("DOMContentLoaded", bind);
+  document.addEventListener("click", function(e){
+    const tab = e.target.closest('[data-tab="clients"], [data-goto="clients"]');
+    if (tab) setTimeout(refreshClientTables, 80);
+  }, true);
+
+  setTimeout(refreshClientTables, 250);
+  setTimeout(refreshClientTables, 1200);
+  setInterval(function(){
+    if (qs("#clients.admin-section.active")) refreshClientTables();
+  }, 10000);
+
+  window.MLM_REFRESH_CLIENT_TABLES = refreshClientTables;
 })();
 </script>
 

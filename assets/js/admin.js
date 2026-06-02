@@ -580,7 +580,7 @@ async function dashboard() {
       refresh();
       return true;
     }
-    setClientStatus(false, 'Offline/local mode');
+    setClientStatus(false, 'API not connected yet');
     if (showAlert) alert('Could not reach clients API. Make sure the Worker was updated with /clients.');
     return false;
   }
@@ -588,7 +588,7 @@ async function dashboard() {
   function setClientStatus(ok, msg) {
     const el = $('#clientsApiStatus');
     if (!el) return;
-    el.textContent = ok ? 'Website API connected' : msg;
+    el.textContent = ok ? 'Website API connected' : (msg || 'Checking connection');
     el.classList.toggle('ok', !!ok);
     el.classList.toggle('warn', !ok);
   }
