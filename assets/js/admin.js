@@ -427,7 +427,15 @@ function bindLiveInventoryControls() {
         features: fd.get('features'),
         featured: form.elements.featured.checked,
         sold: form.elements.sold.checked,
-        status: form.elements.sold.checked ? 'sold' : 'available'
+        status: form.elements.sold.checked ? 'sold' : 'available',
+        financeRate: fd.get('financeRate'),
+        financeTermMonths: fd.get('financeTermMonths'),
+        taxRate: fd.get('taxRate'),
+        downPayment: fd.get('downPayment'),
+        monthlyPayment: fd.get('monthlyPayment'),
+        biweeklyPayment: fd.get('biweeklyPayment'),
+        weeklyPayment: fd.get('weeklyPayment'),
+        paymentNote: fd.get('paymentNote')
       };
 
       try {

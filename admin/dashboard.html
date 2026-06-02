@@ -301,6 +301,20 @@
   .checkbox-row input{width:auto!important}
   @media(max-width:720px){.admin-modal-grid{grid-template-columns:1fr}.live-inventory-toolbar{align-items:stretch}.live-inventory-toolbar>*{width:100%}}
 
+
+/* ── Payment Calculator Editor ── */
+.payment-calc-panel{grid-column:1/-1;border:1px solid var(--line,#e5e7eb);border-radius:16px;background:#f8fafc;padding:16px;margin-top:4px}
+.payment-calc-panel h4{margin:0 0 6px;font-size:14px;color:var(--ink,#111827)}
+.payment-calc-panel p{margin:0 0 12px;font-family:var(--font-ui);font-size:12px;color:var(--muted,#64748b)}
+.payment-calc-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.payment-result-strip{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:12px}
+.payment-result{background:#fff;border:1px solid var(--line,#e5e7eb);border-radius:12px;padding:12px}
+.payment-result span{display:block;font-family:var(--font-ui);font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted,#64748b);font-weight:800;margin-bottom:4px}
+.payment-result strong{display:block;font-size:22px;color:var(--ink,#111827);line-height:1}
+.payment-calc-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+@media(max-width:860px){.payment-calc-grid,.payment-result-strip{grid-template-columns:1fr 1fr}}
+@media(max-width:520px){.payment-calc-grid,.payment-result-strip{grid-template-columns:1fr}}
+
 </style>
 </head>
 <body>
@@ -546,6 +560,53 @@
               <input name="interiorColor" placeholder="Interior color">
               <input class="full" name="features" placeholder="Features separated by commas">
               <textarea class="full" name="description" placeholder="Description" style="min-height:110px;"></textarea>
+
+              <div class="payment-calc-panel">
+                <h4>Biweekly Payment Calculator</h4>
+                <p>Adds 12% Manitoba tax before standard amortization. Default: 7% APR if no rate is selected. Default term: 84 months if no term is selected. APR options: 2.9%, 4.9%, 5.9%, 6.9%, 7%, 8.9%, 9.9%, 10.9%, 12.9%, 14.9%. Biweekly = monthly × 12 ÷ 26.</p>
+                <div class="payment-calc-grid">
+                  <select name="financeRate">
+                    <option value="">Select APR — default 7%</option>
+                    <option value="2.9">2.9% APR</option>
+                    <option value="4.9">4.9% APR</option>
+                    <option value="5.9">5.9% APR</option>
+                    <option value="6.9">6.9% APR</option>
+                    <option value="7" selected>7% APR</option>
+                    <option value="8.9">8.9% APR</option>
+                    <option value="9.9">9.9% APR</option>
+                    <option value="10.9">10.9% APR</option>
+                    <option value="12.9">12.9% APR</option>
+                    <option value="14.9">14.9% APR</option>
+                  </select>
+                  <select name="financeTermMonths">
+                    <option value="">Select term — default 84 months</option>
+                    <option value="36">36 months</option>
+                    <option value="48">48 months</option>
+                    <option value="60">60 months</option>
+                    <option value="72">72 months</option>
+                    <option value="84" selected>84 months</option>
+                    <option value="96">96 months</option>
+                  </select>
+                  <input name="taxRate" placeholder="Tax rate %" value="12" readonly>
+                  <input name="downPayment" placeholder="Down payment" value="0">
+                </div>
+                <div class="payment-result-strip">
+                  <div class="payment-result"><span>Monthly</span><strong id="paymentMonthlyPreview">$0</strong></div>
+                  <div class="payment-result"><span>Biweekly</span><strong id="paymentBiweeklyPreview">$0</strong></div>
+                  <div class="payment-result"><span>Total financed</span><strong id="paymentFinancePreview">$0</strong></div>
+                </div>
+                <div class="payment-calc-grid" style="margin-top:10px;">
+                  <input name="monthlyPayment" placeholder="Monthly payment">
+                  <input name="biweeklyPayment" placeholder="Biweekly payment">
+                  <input name="weeklyPayment" type="hidden">
+                  <input name="paymentNote" placeholder="Payment note">
+                </div>
+                <div class="payment-calc-actions">
+                  <button class="btn btn-sm btn-outline" id="calculatePaymentsBtn" type="button">Calculate Payments</button>
+                  <button class="btn btn-sm btn-outline" id="clearPaymentsBtn" type="button">Clear Payments</button>
+                </div>
+              </div>
+
               <label class="checkbox-row"><input name="featured" type="checkbox"> Featured vehicle</label>
               <label class="checkbox-row"><input name="sold" type="checkbox"> Mark as sold</label>
             </div>
@@ -587,6 +648,43 @@
               <input name="interiorColor" placeholder="Interior color">
               <input class="full" name="features" placeholder="Features separated by commas">
               <textarea class="full" name="description" placeholder="Description" style="min-height:110px;"></textarea>
+
+              <div class="payment-calc-panel">
+                <h4>Biweekly Payment Calculator</h4>
+                <p>Adds 12% Manitoba tax before standard amortization. Default: 7% APR if no rate is selected. Default term: 84 months if no term is selected. APR options: 2.9%, 4.9%, 5.9%, 6.9%, 7%, 8.9%, 9.9%, 10.9%, 12.9%, 14.9%. Biweekly = monthly × 12 ÷ 26.</p>
+                <div class="payment-calc-grid">
+                  <select name="financeRate">
+                    <option value="7">7% APR</option>
+                    <option value="2.9">2.9% APR</option>
+                  </select>
+                  <select name="financeTermMonths">
+                    <option value="36">36 months</option>
+                    <option value="48">48 months</option>
+                    <option value="60">60 months</option>
+                    <option value="72">72 months</option>
+                    <option value="84" selected>84 months</option>
+                    <option value="96">96 months</option>
+                  </select>
+                  <input name="taxRate" placeholder="Tax rate %" value="12" readonly>
+                  <input name="downPayment" placeholder="Down payment" value="0">
+                </div>
+                <div class="payment-result-strip">
+                  <div class="payment-result"><span>Monthly</span><strong id="paymentMonthlyPreview">$0</strong></div>
+                  <div class="payment-result"><span>Biweekly</span><strong id="paymentBiweeklyPreview">$0</strong></div>
+                  <div class="payment-result"><span>Total financed</span><strong id="paymentFinancePreview">$0</strong></div>
+                </div>
+                <div class="payment-calc-grid" style="margin-top:10px;">
+                  <input name="monthlyPayment" placeholder="Monthly payment">
+                  <input name="biweeklyPayment" placeholder="Biweekly payment">
+                  <input name="weeklyPayment" type="hidden">
+                  <input name="paymentNote" placeholder="Payment note">
+                </div>
+                <div class="payment-calc-actions">
+                  <button class="btn btn-sm btn-outline" id="calculatePaymentsBtn" type="button">Calculate Payments</button>
+                  <button class="btn btn-sm btn-outline" id="clearPaymentsBtn" type="button">Clear Payments</button>
+                </div>
+              </div>
+
               <label class="checkbox-row"><input name="featured" type="checkbox"> Featured vehicle</label>
               <label class="checkbox-row"><input name="sold" type="checkbox"> Mark as sold</label>
             </div>
@@ -701,10 +799,10 @@
   </main>
 </div>
 
-<script src="../assets/js/admin.js?v=10.5"></script>
+<script src="../assets/js/admin.js?v=10.8"></script>
 
 <script>
-/* v10.5 Direct Live Inventory Save Binder
+/* v10.8 Direct Live Inventory Save Binder + Full Payment Rate Options
    This runs directly inside dashboard.html, after admin.js, and binds the modal Save button.
 */
 (function(){

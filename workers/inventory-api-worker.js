@@ -181,7 +181,8 @@ export default {
           "title", "year", "make", "model", "trim", "price", "mileage", "kilometers",
           "bodyStyle", "transmission", "fuel", "drivetrain", "vin", "stockNumber",
           "exteriorColor", "interiorColor", "description", "features", "featured",
-          "sold", "status"
+          "sold", "status",
+          "monthlyPayment", "biweeklyPayment", "weeklyPayment", "financeTermMonths", "financeRate", "taxRate", "downPayment", "paymentNote"
         ];
 
         const updates = {};
@@ -193,6 +194,13 @@ export default {
         if (Object.prototype.hasOwnProperty.call(updates, "mileage")) updates.mileage = Number(updates.mileage || 0);
         if (Object.prototype.hasOwnProperty.call(updates, "kilometers")) updates.kilometers = Number(updates.kilometers || 0);
         if (Object.prototype.hasOwnProperty.call(updates, "year")) updates.year = Number(updates.year || 0);
+        if (Object.prototype.hasOwnProperty.call(updates, "monthlyPayment")) updates.monthlyPayment = Number(updates.monthlyPayment || 0);
+        if (Object.prototype.hasOwnProperty.call(updates, "biweeklyPayment")) updates.biweeklyPayment = Number(updates.biweeklyPayment || 0);
+        if (Object.prototype.hasOwnProperty.call(updates, "weeklyPayment")) updates.weeklyPayment = Number(updates.weeklyPayment || 0);
+        if (Object.prototype.hasOwnProperty.call(updates, "financeTermMonths")) updates.financeTermMonths = Number(updates.financeTermMonths || 0);
+        if (Object.prototype.hasOwnProperty.call(updates, "financeRate")) updates.financeRate = Number(updates.financeRate || 0);
+        if (Object.prototype.hasOwnProperty.call(updates, "taxRate")) updates.taxRate = Number(updates.taxRate || 0);
+        if (Object.prototype.hasOwnProperty.call(updates, "downPayment")) updates.downPayment = Number(updates.downPayment || 0);
         if (typeof updates.features === "string") {
           updates.features = updates.features.split(",").map(x => x.trim()).filter(Boolean);
         }

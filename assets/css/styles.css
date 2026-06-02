@@ -2036,3 +2036,7 @@ label { font-family: var(--font-ui); font-size: 13px; font-weight: 600; color: v
 @media (max-width: 920px) {
   .financing-situations-inline { display: none; }
 }
+
+
+/* v10.6 Payment fields */
+.payment-pill{display:inline-flex;align-items:center;gap:4px;padding:6px 10px;border-radius:999px;background:#fff1f2;color:#991b1b;font:900 12px/1 var(--font-ui,system-ui);border:1px solid rgba(193,18,31,.14)}
