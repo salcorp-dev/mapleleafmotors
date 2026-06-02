@@ -377,6 +377,17 @@ export default {
 // Data helpers
 // ─────────────────────────────────────────────
 
+
+// v10.2 required data helpers
+async function getInventory(env) {
+  const raw = await env.INVENTORY_KV.get(INVENTORY_KEY);
+  return raw ? JSON.parse(raw) : [];
+}
+
+async function saveInventory(env, inventory) {
+  await env.INVENTORY_KV.put(INVENTORY_KEY, JSON.stringify(Array.isArray(inventory) ? inventory : []));
+}
+
 async function getClients(env) {
   const raw = await env.INVENTORY_KV.get(CLIENTS_KEY);
   const clients = raw ? JSON.parse(raw) : {};
