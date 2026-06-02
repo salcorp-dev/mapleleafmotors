@@ -95,7 +95,7 @@ function vehicleCard(v) {
         ${v.transmission ? `<span class="vehicle-meta-dot">·</span><span>${v.transmission}</span>` : ''}
       </div>
       <div class="price-block">
-        <div class="price">${money(v.price)}${mlmFinalBiweeklyHtml(v)}</div>
+        <div class="price">${money(v.price)}</div>
         <div class="price-monthly">Est. <strong>$${biweekly(v.price)}/biweekly</strong> OAC</div>
       </div>
       <div class="vehicle-actions">
@@ -115,7 +115,7 @@ function heroCarCard(v) {
     <div class="hero-car-body">
       <span class="pill pill-dark">${v.bodyStyle || 'Vehicle'}</span>
       <h3>${title(v)}</h3>
-      <div class="hero-car-meta">${km(v).toLocaleString()} km · ${money(v.price)}${mlmFinalBiweeklyHtml(v)}</div>
+      <div class="hero-car-meta">${km(v).toLocaleString()} km · ${money(v.price)}</div>
       <a class="btn btn-sm" href="vehicle.html?id=${encodeURIComponent(v.id)}">View Vehicle →</a>
     </div>
   </div>`;
@@ -327,7 +327,7 @@ async function renderVehicle() {
         </div>
 
         <div class="price-display">
-          <div class="main-price">${money(v.price)}${mlmFinalBiweeklyHtml(v)}</div>
+          <div class="main-price">${money(v.price)}</div>
           <div class="payment-est">Est. <strong>$${biweekly(v.price)}/biweekly</strong><br>OAC · 84 mo @ 7.9%</div>
         </div>
 
@@ -533,9 +533,31 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 
-// v10.9 helper: final biweekly payment display
-function mlmFinalBiweeklyHtml(vehicle) {
-  const biweekly = Number(vehicle?.biweeklyPayment || 0);
-  if (!biweekly) return "";
-  return `<div class="final-biweekly-payment">Biweekly <strong>$${Math.round(biweekly).toLocaleString()}</strong></div>`;
+
+
+// v10.12 single biweekly display helper.
+// Keeps only the existing "Est. $___/biweekly" style and removes the duplicate price pill.
+function mlmBiweeklyAmount(vehicle) {
+  const saved = Number(vehicle?.biweeklyPayment || 0);
+  if (saved) return Math.round(saved);
+
+  const price = Number(vehicle?.price || 0);
+  if (!price) return 0;
+
+  const apr = Number(vehicle?.financeRate || 7) / 100;
+  const months = Number(vehicle?.financeTermMonths || 84);
+  const down = Number(vehicle?.downPayment || 0);
+  const financed = Math.max(0, (price * 1.12) - down);
+  const monthlyRate = apr / 12;
+
+  let monthly = 0;
+  if (months > 0) {
+    if (monthlyRate > 0) {
+      monthly = financed * (monthlyRate * Math.pow(1 + monthlyRate, months)) / (Math.pow(1 + monthlyRate, months) - 1);
+    } else {
+      monthly = financed / months;
+    }
+  }
+
+  return Math.round(monthly * 12 / 26);
 }

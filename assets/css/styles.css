@@ -2057,3 +2057,7 @@ label { font-family: var(--font-ui); font-size: 13px; font-weight: 600; color: v
 }
 .final-biweekly-payment strong,
 .vehicle-payment-line strong{font-size:14px;color:#7f1d1d;}
+
+
+/* v10.12 hide duplicate biweekly pill; keep the existing Est. $___/biweekly line */
+.final-biweekly-payment{display:none!important;}
