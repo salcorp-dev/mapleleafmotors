@@ -168,7 +168,10 @@ function escapeHtml(value) {
 async function fetchClientsFromApi(config) {
   if (!config.clientsApiUrl) return null;
   try {
-    const res = await fetch(config.clientsApiUrl, { cache: 'no-store' });
+    const res = await fetch(config.clientsApiUrl, {
+      cache: 'no-store',
+      headers: { Authorization: `Bearer ${adminToken()}` }
+    });
     if (!res.ok) throw new Error(`API ${res.status}`);
     return await res.json();
   } catch (e) {
@@ -197,6 +200,23 @@ async function deleteClientFromApi(config, type, id) {
   });
   const payload = await res.json().catch(() => ({}));
   if (!res.ok || payload.error) throw new Error(payload.error || `Delete failed (${res.status})`);
+  return payload;
+}
+
+
+async function patchClientInApi(config, type, id, entry) {
+  if (!config.clientsApiUrl) throw new Error('Missing clients API URL.');
+  const base = config.clientsApiUrl.replace(/\/$/, '');
+  const res = await fetch(`${base}/${type}/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${adminToken()}`
+    },
+    body: JSON.stringify(entry)
+  });
+  const payload = await res.json().catch(() => ({}));
+  if (!res.ok || payload.error) throw new Error(payload.error || `Update failed (${res.status})`);
   return payload;
 }
 
@@ -549,7 +569,7 @@ async function dashboard() {
   data.deliveries = data.deliveries || [];
   data.testimonials = data.testimonials || [];
 
-  window.syncClientsFromApi = window.syncClientsFromApi = async function syncClientsFromApi(showAlert = false) {
+  window.syncClientsFromApi = async function syncClientsFromApi(showAlert = false) {
     const clients = await fetchClientsFromApi(config);
     if (clients) {
       data.deliveries = Array.isArray(clients.deliveries) ? clients.deliveries : [];
@@ -573,7 +593,7 @@ async function dashboard() {
     el.classList.toggle('warn', !ok);
   }
 
-  window.refresh = window.refresh = function refresh() {
+  window.refresh = function refresh() {
     saveData(data);
     if ($('#totalLeads')) $('#totalLeads').textContent = leads().length;
     if ($('#totalVehicles')) $('#totalVehicles').textContent = data.inventory.length;
@@ -583,6 +603,154 @@ async function dashboard() {
     renderInventory();
     renderClients();
   }
+
+
+  function renderClients() {
+    const deliveryRows = $('#deliveryRows');
+    const testimonialRows = $('#testimonialRows');
+
+    if (deliveryRows) {
+      const deliveries = Array.isArray(data.deliveries) ? data.deliveries : [];
+      deliveryRows.innerHTML = deliveries.map(d => {
+        const archived = d.archiveHidden === true || String(d.status || '').toLowerCase() === 'archived';
+        const photoCount = Array.isArray(d.images) ? d.images.length : 0;
+        const thumb = photoCount ? `<img src="${escapeHtml(d.images[0])}" alt="" style="width:70px;height:44px;object-fit:cover;border-radius:8px;border:1px solid #e5e7eb;">` : '<small>No photo</small>';
+        return `<tr class="${archived ? 'muted-row' : ''}">
+          <td><strong>${escapeHtml(d.clientName || 'Happy client')}</strong>${archived ? '<br><small>Archived</small>' : ''}</td>
+          <td>${escapeHtml(d.vehicle || '')}<br>${d.quote ? `<small>${escapeHtml(d.quote)}</small>` : ''}</td>
+          <td>${thumb}<br><small>${photoCount} photo${photoCount === 1 ? '' : 's'}</small></td>
+          <td>
+            <button class="btn small light" type="button" data-edit-delivery="${escapeHtml(d.id)}">Edit</button>
+            <button class="btn small light" type="button" data-archive-delivery="${escapeHtml(d.id)}">${archived ? 'Restore' : 'Archive'}</button>
+            <button class="btn small light" type="button" data-delete-delivery="${escapeHtml(d.id)}">Delete</button>
+          </td>
+        </tr>`;
+      }).join('') || '<tr><td colspan="4">No delivery photos yet. Click Refresh From API if you just uploaded one.</td></tr>';
+
+      $$('[data-edit-delivery]').forEach(btn => {
+        btn.onclick = async () => {
+          const id = btn.dataset.editDelivery;
+          const item = data.deliveries.find(x => String(x.id) === String(id));
+          if (!item) return;
+          const clientName = prompt('Client name:', item.clientName || '') ?? item.clientName;
+          const vehicle = prompt('Vehicle:', item.vehicle || '') ?? item.vehicle;
+          const quote = prompt('Optional quote:', item.quote || '') ?? item.quote;
+          const ratingRaw = prompt('Rating 1-5:', String(item.rating || 5));
+          const rating = Math.max(1, Math.min(5, Number(ratingRaw || item.rating || 5)));
+          try {
+            const res = await patchClientInApi(config, 'deliveries', id, { clientName, vehicle, quote, rating });
+            const index = data.deliveries.findIndex(x => String(x.id) === String(id));
+            if (index >= 0) data.deliveries[index] = res.entry;
+            await syncClientsFromApi(false);
+            refresh();
+          } catch (err) {
+            alert('Could not update delivery: ' + err.message);
+          }
+        };
+      });
+
+      $$('[data-archive-delivery]').forEach(btn => {
+        btn.onclick = async () => {
+          const id = btn.dataset.archiveDelivery;
+          const item = data.deliveries.find(x => String(x.id) === String(id));
+          if (!item) return;
+          const archiveHidden = !(item.archiveHidden === true || String(item.status || '').toLowerCase() === 'archived');
+          try {
+            await patchClientInApi(config, 'deliveries', id, { archiveHidden, status: archiveHidden ? 'archived' : 'active' });
+            await syncClientsFromApi(false);
+            refresh();
+          } catch (err) {
+            alert('Could not archive delivery: ' + err.message);
+          }
+        };
+      });
+
+      $$('[data-delete-delivery]').forEach(btn => {
+        btn.onclick = async () => {
+          const id = btn.dataset.deleteDelivery;
+          if (!confirm('Delete this delivery photo post?')) return;
+          try {
+            await deleteClientFromApi(config, 'deliveries', id);
+            data.deliveries = data.deliveries.filter(x => String(x.id) !== String(id));
+            await syncClientsFromApi(false);
+            refresh();
+          } catch (err) {
+            alert('Could not delete delivery: ' + err.message);
+          }
+        };
+      });
+    }
+
+    if (testimonialRows) {
+      const testimonials = Array.isArray(data.testimonials) ? data.testimonials : [];
+      testimonialRows.innerHTML = testimonials.map(t => {
+        const archived = t.archiveHidden === true || String(t.status || '').toLowerCase() === 'archived';
+        return `<tr class="${archived ? 'muted-row' : ''}">
+          <td><strong>${escapeHtml(t.name || 'Customer')}</strong>${archived ? '<br><small>Archived</small>' : ''}</td>
+          <td>${'★'.repeat(Number(t.rating || 5))}</td>
+          <td>${escapeHtml(t.text || '')}</td>
+          <td>
+            <button class="btn small light" type="button" data-edit-review="${escapeHtml(t.id)}">Edit</button>
+            <button class="btn small light" type="button" data-archive-review="${escapeHtml(t.id)}">${archived ? 'Restore' : 'Archive'}</button>
+            <button class="btn small light" type="button" data-delete-review="${escapeHtml(t.id)}">Delete</button>
+          </td>
+        </tr>`;
+      }).join('') || '<tr><td colspan="4">No reviews yet.</td></tr>';
+
+      $$('[data-edit-review]').forEach(btn => {
+        btn.onclick = async () => {
+          const id = btn.dataset.editReview;
+          const item = data.testimonials.find(x => String(x.id) === String(id));
+          if (!item) return;
+          const name = prompt('Customer name:', item.name || '') ?? item.name;
+          const text = prompt('Review text:', item.text || '') ?? item.text;
+          const ratingRaw = prompt('Rating 1-5:', String(item.rating || 5));
+          const rating = Math.max(1, Math.min(5, Number(ratingRaw || item.rating || 5)));
+          try {
+            const res = await patchClientInApi(config, 'testimonials', id, { name, text, rating });
+            const index = data.testimonials.findIndex(x => String(x.id) === String(id));
+            if (index >= 0) data.testimonials[index] = res.entry;
+            await syncClientsFromApi(false);
+            refresh();
+          } catch (err) {
+            alert('Could not update review: ' + err.message);
+          }
+        };
+      });
+
+      $$('[data-archive-review]').forEach(btn => {
+        btn.onclick = async () => {
+          const id = btn.dataset.archiveReview;
+          const item = data.testimonials.find(x => String(x.id) === String(id));
+          if (!item) return;
+          const archiveHidden = !(item.archiveHidden === true || String(item.status || '').toLowerCase() === 'archived');
+          try {
+            await patchClientInApi(config, 'testimonials', id, { archiveHidden, status: archiveHidden ? 'archived' : 'active' });
+            await syncClientsFromApi(false);
+            refresh();
+          } catch (err) {
+            alert('Could not archive review: ' + err.message);
+          }
+        };
+      });
+
+      $$('[data-delete-review]').forEach(btn => {
+        btn.onclick = async () => {
+          const id = btn.dataset.deleteReview;
+          if (!confirm('Delete this review?')) return;
+          try {
+            await deleteClientFromApi(config, 'testimonials', id);
+            data.testimonials = data.testimonials.filter(x => String(x.id) !== String(id));
+            await syncClientsFromApi(false);
+            refresh();
+          } catch (err) {
+            alert('Could not delete review: ' + err.message);
+          }
+        };
+      });
+    }
+  }
+
 
   function renderLeads() {
     if (!$('#leadRows')) return;
@@ -708,6 +876,7 @@ async function dashboard() {
         const uploaded = await postClientToApi(config, fd);
         data.deliveries.unshift(uploaded.entry);
         await syncClientsFromApi(false);
+        refresh();
         alert('Delivery uploaded to the Our Clients page.');
       } catch (err) {
         alert('Upload failed: ' + err.message);
@@ -732,6 +901,7 @@ async function dashboard() {
         const uploaded = await postClientToApi(config, fd);
         data.testimonials.unshift(uploaded.entry);
         await syncClientsFromApi(false);
+        refresh();
         alert('Review uploaded to the Our Clients page.');
       } catch (err) {
         alert('Upload failed: ' + err.message);

@@ -55,7 +55,18 @@ export default {
       }
 
       if (url.pathname === "/clients" && request.method === "GET") {
-        return json(await getClients(env));
+        const clients = await getClients(env);
+        const auth = request.headers.get("Authorization") || "";
+        let isAdmin = false;
+        if (auth) {
+          try { await requireAdminSession(request, env); isAdmin = true; } catch (e) { isAdmin = false; }
+        }
+        if (isAdmin) return json(clients);
+
+        return json({
+          deliveries: clients.deliveries.filter(x => x.archiveHidden !== true),
+          testimonials: clients.testimonials.filter(x => x.archiveHidden !== true)
+        });
       }
 
 
@@ -329,6 +340,7 @@ export default {
             rating: Number(entry.rating || 5),
             images: entry.images || [],
             createdAt: entry.createdAt || new Date().toISOString(),
+            archiveHidden: entry.archiveHidden === true,
             updatedAt: new Date().toISOString()
           };
 
@@ -348,6 +360,7 @@ export default {
             text: entry.text || entry.quote || "",
             rating: Number(entry.rating || 5),
             createdAt: entry.createdAt || new Date().toISOString(),
+            archiveHidden: entry.archiveHidden === true,
             updatedAt: new Date().toISOString()
           };
 
@@ -360,6 +373,40 @@ export default {
         }
 
         return json({ error: "Unknown client entry type. Use delivery or testimonial." }, 400);
+      }
+
+
+      if (url.pathname.startsWith("/clients/") && request.method === "PATCH") {
+        await requireAdminSession(request, env);
+
+        const parts = url.pathname.split("/").filter(Boolean);
+        const type = parts[1];
+        const id = decodeURIComponent(parts[2] || "");
+        if (!["deliveries", "testimonials"].includes(type) || !id) {
+          return json({ error: "Use PATCH /clients/deliveries/<id> or /clients/testimonials/<id>" }, 400);
+        }
+
+        const body = await request.json().catch(() => ({}));
+        const updates = body.entry || body || {};
+        const clients = await getClients(env);
+        const index = clients[type].findIndex(x => x.id === id);
+        if (index < 0) return json({ error: "Client entry not found" }, 404);
+
+        const allowed = ["clientName", "vehicle", "quote", "name", "text", "rating", "archiveHidden", "archived", "status"];
+        const clean = {};
+        for (const k of allowed) {
+          if (Object.prototype.hasOwnProperty.call(updates, k)) clean[k] = updates[k];
+        }
+        if (Object.prototype.hasOwnProperty.call(clean, "rating")) clean.rating = Number(clean.rating || 5);
+
+        clients[type][index] = {
+          ...clients[type][index],
+          ...clean,
+          updatedAt: new Date().toISOString()
+        };
+
+        await env.INVENTORY_KV.put(CLIENTS_KEY, JSON.stringify(clients));
+        return json({ ok: true, message: "client entry updated", type, entry: clients[type][index], clients });
       }
 
       if (url.pathname.startsWith("/clients/") && request.method === "DELETE") {
