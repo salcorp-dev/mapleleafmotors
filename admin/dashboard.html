@@ -853,10 +853,10 @@
   </main>
 </div>
 
-<script src="../assets/js/admin.js?v=10.19"></script>
+<script src="../assets/js/admin.js?v=10.20"></script>
 
 <script>
-/* v10.19 Direct Live Inventory Save Binder + Calculator Price Autofill */
+/* v10.20 Direct Live Inventory Save Binder + Force Calculator Price Autofill */
 (function(){
   "use strict";
 
@@ -1042,6 +1042,7 @@
     try {
       const data = await api("/inventory", { method:"GET" });
       LIVE_INV = Array.isArray(data.inventory) ? data.inventory : [];
+      window.LIVE_INV = LIVE_INV;
       setStatus(true, LIVE_INV.length + " live vehicle" + (LIVE_INV.length === 1 ? "" : "s"));
       const total = qs("#totalVehicles");
       if (total) total.textContent = LIVE_INV.length;
@@ -1094,7 +1095,9 @@
 
     modal.classList.add("active");
     modal.setAttribute("aria-hidden", "false");
+    syncCalculatorPriceFromVehicle(v);
     calculatePayments();
+    setTimeout(() => window.MLM_FORCE_CALC_PRICE_AUTOFILL && window.MLM_FORCE_CALC_PRICE_AUTOFILL(), 50);
   }
 
   function closeEdit(){
@@ -1554,5 +1557,103 @@ document.querySelectorAll('.tab').forEach(t => {
   });
 });
 </script>
+
+<script>
+/* v10.20 Force calculator vehicle price autofill fallback */
+(function(){
+  "use strict";
+
+  function qs(s, p=document){ return p.querySelector(s); }
+  function moneyNumber(v){ return Number(String(v || "").replace(/[^0-9.]/g, "")) || 0; }
+
+  function findCurrentVehiclePrice(){
+    const form = qs("#vehicleEditForm");
+    if (!form) return 0;
+
+    // 1) Prefer the actual main vehicle price field inside the edit form.
+    const priceField = form.elements.price || qs('[name="price"]', form);
+    let price = moneyNumber(priceField?.value);
+    if (price) return price;
+
+    // 2) If the hidden ID is set, look for the vehicle in any global inventory arrays.
+    const id = form.elements.id?.value || qs('[name="id"]', form)?.value || "";
+    const possibleArrays = [
+      window.LIVE_INV,
+      window.LIVE_INVENTORY,
+      window.inventory,
+      window.INVENTORY,
+      window.vehicles
+    ].filter(Array.isArray);
+
+    for (const arr of possibleArrays) {
+      const vehicle = arr.find(v => String(v.id) === String(id));
+      price = moneyNumber(vehicle?.price);
+      if (price) return price;
+    }
+
+    return 0;
+  }
+
+  function forceFillCalculatorPrice(){
+    const modal = qs("#vehicleEditModal");
+    const form = qs("#vehicleEditForm");
+    const calcPrice = qs("#calcVehiclePrice");
+    if (!modal || !form || !calcPrice) return;
+
+    const modalOpen = modal.classList.contains("active") || modal.getAttribute("aria-hidden") === "false";
+    if (!modalOpen) return;
+
+    const price = findCurrentVehiclePrice();
+    if (!price) return;
+
+    // Always fill it when the editor opens, or when it is empty/zero.
+    if (!moneyNumber(calcPrice.value)) {
+      calcPrice.value = price.toLocaleString();
+    }
+
+    if (form.elements.price && !moneyNumber(form.elements.price.value)) {
+      form.elements.price.value = price;
+    }
+
+    calcPrice.dispatchEvent(new Event("input", { bubbles:true }));
+    calcPrice.dispatchEvent(new Event("change", { bubbles:true }));
+
+    if (typeof window.MLM_CALCULATE_PAYMENTS === "function") {
+      try { window.MLM_CALCULATE_PAYMENTS(); } catch(e) {}
+    }
+  }
+
+  // Run after clicks on Edit buttons, after modal class changes, and on focus.
+  document.addEventListener("click", function(e){
+    const editButton = e.target.closest('[data-v1018-edit],[data-v1011-edit],[data-edit-vehicle],[data-edit]');
+    if (editButton) {
+      setTimeout(forceFillCalculatorPrice, 50);
+      setTimeout(forceFillCalculatorPrice, 200);
+      setTimeout(forceFillCalculatorPrice, 600);
+    }
+  }, true);
+
+  document.addEventListener("focusin", function(e){
+    if (e.target && e.target.id === "calcVehiclePrice") {
+      setTimeout(forceFillCalculatorPrice, 0);
+    }
+  });
+
+  document.addEventListener("DOMContentLoaded", function(){
+    const modal = qs("#vehicleEditModal");
+    if (modal) {
+      const obs = new MutationObserver(function(){
+        setTimeout(forceFillCalculatorPrice, 50);
+      });
+      obs.observe(modal, { attributes:true, attributeFilter:["class","aria-hidden"] });
+    }
+
+    setInterval(forceFillCalculatorPrice, 750);
+  });
+
+  window.MLM_FORCE_CALC_PRICE_AUTOFILL = forceFillCalculatorPrice;
+})();
+</script>
+
 </body>
 </html>
