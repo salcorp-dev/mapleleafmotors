@@ -921,10 +921,10 @@
   </main>
 </div>
 
-<script src="../assets/js/admin.js?v=10.15"></script>
+<script src="../assets/js/admin.js?v=10.16"></script>
 
 <script>
-/* v10.15 Direct Live Inventory Save Binder + Archive Restore Fix */
+/* v10.16 Direct Live Inventory Save Binder + Safe Archive Flag */
 (function(){
   "use strict";
 
@@ -1065,7 +1065,7 @@
     const f = qs("#liveInventoryFilter")?.value || "";
     return LIVE_INV.filter(v => {
       const text = [v.title, v.year, v.make, v.model, v.trim, v.vin, v.stockNumber, v.bodyStyle, v.drivetrain, v.transmission].join(" ").toLowerCase();
-      const sold = !!v.sold || !!v.archived || ["sold","archived"].includes(String(v.status || "").toLowerCase());
+      const sold = !!v.archiveHidden || !!v.sold || !!v.archived || ["sold","archived"].includes(String(v.status || "").toLowerCase());
       if (q && !text.includes(q)) return false;
       if (f === "available" && sold) return false;
       if (f === "sold" && !sold) return false;
@@ -1080,7 +1080,7 @@
 
     const rows = filtered();
     tbody.innerHTML = rows.map(v => {
-      const sold = !!v.sold || !!v.archived || ["sold","archived"].includes(String(v.status || "").toLowerCase());
+      const sold = !!v.archiveHidden || !!v.sold || !!v.archived || ["sold","archived"].includes(String(v.status || "").toLowerCase());
       const image = img(v);
       const biweekly = Number(v.biweeklyPayment || 0);
       return `<tr>
@@ -1091,7 +1091,7 @@
         <td>${sold ? '<span class="status-chip warn">Sold</span>' : '<span class="status-chip ok">Available</span>'}${v.featured ? '<br><span class="status-chip">Featured</span>' : ""}</td>
         <td>
           <button class="btn small light" type="button" data-v1011-edit="${esc(v.id)}">Edit</button>
-          <button class="btn small light" type="button" data-v1011-sold="${esc(v.id)}">${sold ? "Mark Available" : "Archive / Mark Sold"}</button>
+          <button class="btn small light" type="button" data-v1011-sold="${esc(v.id)}">${sold ? "Restore Vehicle" : "Archive / Mark Sold"}</button>
           <button class="btn small light" type="button" data-v1011-delete="${esc(v.id)}">Delete</button>
         </td>
       </tr>`;
@@ -1251,9 +1251,9 @@
   async function toggleSold(id){
     const v = LIVE_INV.find(x => String(x.id) === String(id));
     if (!v) return;
-    const sold = !!v.sold || !!v.archived || ["sold","archived"].includes(String(v.status || "").toLowerCase());
+    const sold = !!v.archiveHidden || !!v.sold || !!v.archived || ["sold","archived"].includes(String(v.status || "").toLowerCase());
     try {
-      await api("/inventory/" + encodeURIComponent(id), { method:"PATCH", json:{ sold:!sold, status:!sold ? "archived" : "available" } });
+      await api("/inventory/" + encodeURIComponent(id), { method:"PATCH", json:{ sold:!sold, archived:!sold, archiveHidden:!sold, status:!sold ? "archived" : "available" } });
       await refresh();
     } catch(e) {
       alert("Could not update vehicle: " + e.message);

@@ -50,12 +50,9 @@ export default {
       // ─────────────────────────────────────────────
       if (url.pathname === "/inventory" && request.method === "GET") {
         const inventory = await getInventory(env);
-        // Public site hides only vehicles explicitly archived from admin.
-        // This avoids old inventory disappearing just because an older import used "sold" fields differently.
-        const publicInventory = inventory.filter(v => {
-          const status = String(v.status || "").toLowerCase();
-          return !(v.archived === true || status === "archived");
-        });
+        // Public inventory hides ONLY vehicles archived with the new archiveHidden flag.
+        // This restores older inventory that may have legacy sold/status/archived fields.
+        const publicInventory = inventory.filter(v => v.archiveHidden !== true);
         return json(publicInventory);
       }
 
@@ -191,7 +188,7 @@ export default {
           "title", "year", "make", "model", "trim", "price", "mileage", "kilometers",
           "bodyStyle", "transmission", "fuel", "drivetrain", "vin", "stockNumber",
           "exteriorColor", "interiorColor", "description", "features", "featured",
-          "sold", "status",
+          "sold", "archived", "archiveHidden", "status",
           "monthlyPayment", "biweeklyPayment", "weeklyPayment", "financeTermMonths", "financeRate", "taxRate", "downPayment", "paymentNote"
         ];
 
