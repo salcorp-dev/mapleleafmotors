@@ -853,10 +853,10 @@
   </main>
 </div>
 
-<script src="../assets/js/admin.js?v=10.18"></script>
+<script src="../assets/js/admin.js?v=10.19"></script>
 
 <script>
-/* v10.18 Direct Live Inventory Save Binder + Payment Calculator + Safe Archive */
+/* v10.19 Direct Live Inventory Save Binder + Calculator Price Autofill */
 (function(){
   "use strict";
 
@@ -923,6 +923,19 @@
     if (form.elements.financeRate && !APR_OPTIONS.includes(String(form.elements.financeRate.value))) form.elements.financeRate.value = "7";
     if (form.elements.financeTermMonths && !TERM_OPTIONS.includes(String(form.elements.financeTermMonths.value))) form.elements.financeTermMonths.value = "84";
     if (form.elements.taxRate) form.elements.taxRate.value = "12";
+  }
+
+  function syncCalculatorPriceFromVehicle(vehicle){
+    const form = qs("#vehicleEditForm");
+    const calcPrice = qs("#calcVehiclePrice");
+    if (!form || !calcPrice) return;
+
+    const vehiclePrice = Number(vehicle?.price || 0);
+    const formPrice = parseMoney(form.elements.price?.value || 0);
+    const price = vehiclePrice || formPrice || 0;
+
+    calcPrice.value = price ? price.toLocaleString() : "";
+    if (form.elements.price) form.elements.price.value = price || "";
   }
 
   function calculatePayments(){
@@ -1074,8 +1087,7 @@
     set("taxRate", 12);
     set("downPayment", v.downPayment || 0);
 
-    const calcPrice = qs("#calcVehiclePrice");
-    if (calcPrice) calcPrice.value = v.price ? Number(v.price).toLocaleString() : "";
+    syncCalculatorPriceFromVehicle(v);
 
     if (form.elements.featured) form.elements.featured.checked = !!v.featured;
     if (form.elements.sold) form.elements.sold.checked = isArchived(v);
@@ -1230,6 +1242,7 @@
 
     if (calcPrice) calcPrice.oninput = fromCalcPrice;
     if (mainPrice) mainPrice.oninput = fromMainPrice;
+    syncCalculatorPriceFromVehicle({ price: parseMoney(mainPrice?.value || 0) });
 
     ["financeTermMonths", "financeRate", "downPayment"].forEach(name => {
       const el = qs(`#vehicleEditForm [name="${name}"]`);
