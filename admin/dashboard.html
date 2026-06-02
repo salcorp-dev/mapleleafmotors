@@ -315,6 +315,77 @@
 @media(max-width:860px){.payment-calc-grid,.payment-result-strip{grid-template-columns:1fr 1fr}}
 @media(max-width:520px){.payment-calc-grid,.payment-result-strip{grid-template-columns:1fr}}
 
+
+/* ── v10.10 Auto Payment Calculator ── */
+.payment-calc-panel{
+  grid-column:1/-1;
+  border:1px solid var(--line,#e5e7eb);
+  border-radius:18px;
+  background:#f8fafc;
+  padding:18px;
+  margin-top:6px;
+}
+.payment-calc-panel h4{margin:0 0 6px;font-size:15px;color:var(--ink,#111827)}
+.payment-calc-panel p{margin:0 0 14px;font-family:var(--font-ui);font-size:12px;color:var(--muted,#64748b)}
+.payment-calc-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:12px;
+}
+.payment-field label,
+.payment-result label{
+  display:block;
+  margin:0 0 6px;
+  font-family:var(--font-ui,system-ui);
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:.10em;
+  text-transform:uppercase;
+  color:#7b8190;
+}
+.payment-field input,
+.payment-field select{
+  width:100%;
+  min-height:42px;
+  border:1px solid #d9dee8;
+  border-radius:10px;
+  background:#fff;
+  padding:10px 12px;
+  font-family:var(--font-ui,system-ui);
+  font-size:14px;
+  font-weight:700;
+  color:#111827;
+}
+.payment-result-strip{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:12px;
+  margin-top:12px;
+}
+.payment-result{
+  background:#fff;
+  border:1px solid #d9dee8;
+  border-radius:12px;
+  padding:13px 14px;
+}
+.payment-result strong{
+  display:block;
+  font-family:var(--font-display,system-ui);
+  font-size:25px;
+  font-weight:950;
+  color:#0b1020;
+  line-height:1.05;
+}
+.payment-result.biweekly-final{
+  border-color:rgba(193,18,31,.32);
+  box-shadow:0 8px 24px rgba(193,18,31,.09);
+}
+.payment-result.biweekly-final strong{color:#991b1b}
+.payment-note-input{grid-column:1/-1}
+@media(max-width:860px){
+  .payment-calc-grid,.payment-result-strip{grid-template-columns:1fr}
+}
+
 </style>
 </head>
 <body>
@@ -562,48 +633,76 @@
               <textarea class="full" name="description" placeholder="Description" style="min-height:110px;"></textarea>
 
               <div class="payment-calc-panel">
-                <h4>Biweekly Payment Calculator</h4>
-                <p>Adds 12% Manitoba tax before standard amortization. Default: 7% APR if no rate is selected. Default term: 84 months if no term is selected. APR options: 2.9%, 4.9%, 5.9%, 6.9%, 7%, 8.9%, 9.9%, 10.9%, 12.9%, 14.9%. Biweekly = monthly × 12 ÷ 26.</p>
+                <h4>Payment Calculator</h4>
+                <p>Updates automatically as you change price, term, APR, or down payment. Uses 12% Manitoba tax and standard amortization. Biweekly = monthly × 12 ÷ 26.</p>
+
                 <div class="payment-calc-grid">
-                  <select name="financeRate">
-                    <option value="">Select APR — default 7%</option>
-                    <option value="2.9">2.9% APR</option>
-                    <option value="4.9">4.9% APR</option>
-                    <option value="5.9">5.9% APR</option>
-                    <option value="6.9">6.9% APR</option>
-                    <option value="7" selected>7% APR</option>
-                    <option value="8.9">8.9% APR</option>
-                    <option value="9.9">9.9% APR</option>
-                    <option value="10.9">10.9% APR</option>
-                    <option value="12.9">12.9% APR</option>
-                    <option value="14.9">14.9% APR</option>
-                  </select>
-                  <select name="financeTermMonths">
-                    <option value="">Select term — default 84 months</option>
-                    <option value="36">36 months</option>
-                    <option value="48">48 months</option>
-                    <option value="60">60 months</option>
-                    <option value="72">72 months</option>
-                    <option value="84" selected>84 months</option>
-                    <option value="96">96 months</option>
-                  </select>
-                  <input name="taxRate" placeholder="Tax rate %" value="12" readonly>
-                  <input name="downPayment" placeholder="Down payment" value="0">
+                  <div class="payment-field">
+                    <label>Vehicle Price</label>
+                    <input id="calcVehiclePrice" inputmode="decimal" placeholder="Vehicle price">
+                  </div>
+
+                  <div class="payment-field">
+                    <label>Term</label>
+                    <select name="financeTermMonths">
+                      <option value="">Default 84 months</option>
+                      <option value="36">36 months</option>
+                      <option value="48">48 months</option>
+                      <option value="60">60 months</option>
+                      <option value="72">72 months</option>
+                      <option value="84" selected>84 months</option>
+                      <option value="96">96 months</option>
+                    </select>
+                  </div>
+
+                  <div class="payment-field">
+                    <label>Interest Rate</label>
+                    <select name="financeRate">
+                      <option value="">Default 7%</option>
+                      <option value="2.9">2.9%</option>
+                      <option value="4.9">4.9%</option>
+                      <option value="5.9">5.9%</option>
+                      <option value="6.9">6.9%</option>
+                      <option value="7" selected>7%</option>
+                      <option value="8.9">8.9%</option>
+                      <option value="9.9">9.9%</option>
+                      <option value="10.9">10.9%</option>
+                      <option value="12.9">12.9%</option>
+                      <option value="14.9">14.9%</option>
+                    </select>
+                  </div>
+
+                  <div class="payment-field">
+                    <label>Down Payment</label>
+                    <input name="downPayment" inputmode="decimal" placeholder="0" value="0">
+                  </div>
+
+                  <div class="payment-field">
+                    <label>Tax Rate</label>
+                    <input name="taxRate" value="12" readonly>
+                  </div>
                 </div>
+
                 <div class="payment-result-strip">
-                  <div class="payment-result"><span>Monthly</span><strong id="paymentMonthlyPreview">$0</strong></div>
-                  <div class="payment-result"><span>Biweekly</span><strong id="paymentBiweeklyPreview">$0</strong></div>
-                  <div class="payment-result"><span>Total financed</span><strong id="paymentFinancePreview">$0</strong></div>
+                  <div class="payment-result">
+                    <label>Financed With Tax</label>
+                    <strong id="paymentFinancePreview">$0</strong>
+                  </div>
+                  <div class="payment-result">
+                    <label>Monthly</label>
+                    <strong id="paymentMonthlyPreview">$0</strong>
+                  </div>
+                  <div class="payment-result biweekly-final">
+                    <label>Biweekly</label>
+                    <strong id="paymentBiweeklyPreview">$0</strong>
+                  </div>
                 </div>
-                <div class="payment-calc-grid" style="margin-top:10px;">
-                  <input name="monthlyPayment" placeholder="Monthly payment">
-                  <input name="biweeklyPayment" placeholder="Biweekly payment">
+
+                <div class="payment-calc-grid" style="margin-top:12px;">
+                  <input name="monthlyPayment" type="hidden">
+                  <input name="biweeklyPayment" type="hidden">
                   <input name="weeklyPayment" type="hidden">
-                  <input name="paymentNote" placeholder="Payment note">
-                </div>
-                <div class="payment-calc-actions">
-                  <button class="btn btn-sm btn-outline" id="calculatePaymentsBtn" type="button">Calculate Payments</button>
-                  <button class="btn btn-sm btn-outline" id="clearPaymentsBtn" type="button">Clear Payments</button>
+                  <input class="payment-note-input" name="paymentNote" placeholder="Payment note">
                 </div>
               </div>
 
@@ -670,7 +769,7 @@
                 </div>
                 <div class="payment-result-strip">
                   <div class="payment-result"><span>Monthly</span><strong id="paymentMonthlyPreview">$0</strong></div>
-                  <div class="payment-result"><span>Biweekly</span><strong id="paymentBiweeklyPreview">$0</strong></div>
+                  <div class="payment-result" style="border-color:rgba(193,18,31,.22);box-shadow:0 8px 22px rgba(193,18,31,.08);"><span>Final Biweekly</span><strong id="paymentBiweeklyPreview">$0</strong></div>
                   <div class="payment-result"><span>Total financed</span><strong id="paymentFinancePreview">$0</strong></div>
                 </div>
                 <div class="payment-calc-grid" style="margin-top:10px;">
@@ -678,10 +777,6 @@
                   <input name="biweeklyPayment" placeholder="Biweekly payment">
                   <input name="weeklyPayment" type="hidden">
                   <input name="paymentNote" placeholder="Payment note">
-                </div>
-                <div class="payment-calc-actions">
-                  <button class="btn btn-sm btn-outline" id="calculatePaymentsBtn" type="button">Calculate Payments</button>
-                  <button class="btn btn-sm btn-outline" id="clearPaymentsBtn" type="button">Clear Payments</button>
                 </div>
               </div>
 
@@ -799,10 +894,10 @@
   </main>
 </div>
 
-<script src="../assets/js/admin.js?v=10.8"></script>
+<script src="../assets/js/admin.js?v=10.10"></script>
 
 <script>
-/* v10.8 Direct Live Inventory Save Binder + Full Payment Rate Options
+/* v10.10 Direct Live Inventory Save Binder + Auto Payment Calculator
    This runs directly inside dashboard.html, after admin.js, and binds the modal Save button.
 */
 (function(){
@@ -934,6 +1029,7 @@
     set('model', v.model);
     set('trim', v.trim);
     set('price', v.price);
+    setMoneyInputValue(qs('#calcVehiclePrice'), v.price);
     set('mileage', v.mileage || v.kilometers || '');
     set('bodyStyle', v.bodyStyle);
     set('drivetrain', v.drivetrain);
@@ -977,12 +1073,16 @@
       saveBtn.textContent = 'Saving...';
     }
 
+    const calcVehiclePriceValue = parseMoneyInput(qs('#calcVehiclePrice')?.value || form.elements.price?.value || 0);
+    if (form.elements.price) form.elements.price.value = calcVehiclePriceValue;
+    const calculatedBeforeSave = calculatePayments();
+
     const payload = {
       year: fd.get('year'),
       make: fd.get('make'),
       model: fd.get('model'),
       trim: fd.get('trim'),
-      price: fd.get('price'),
+      price: calcVehiclePriceValue,
       mileage: fd.get('mileage'),
       kilometers: fd.get('mileage'),
       bodyStyle: fd.get('bodyStyle'),

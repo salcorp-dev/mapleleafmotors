@@ -2040,3 +2040,20 @@ label { font-family: var(--font-ui); font-size: 13px; font-weight: 600; color: v
 
 /* v10.6 Payment fields */
 .payment-pill{display:inline-flex;align-items:center;gap:4px;padding:6px 10px;border-radius:999px;background:#fff1f2;color:#991b1b;font:900 12px/1 var(--font-ui,system-ui);border:1px solid rgba(193,18,31,.14)}
+
+
+/* v10.9 Biweekly payment display */
+.final-biweekly-payment,
+.vehicle-payment-line{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:7px 11px;
+  border-radius:999px;
+  background:#fff1f2;
+  color:#991b1b;
+  border:1px solid rgba(193,18,31,.16);
+  font:900 12px/1 var(--font-ui,system-ui);
+}
+.final-biweekly-payment strong,
+.vehicle-payment-line strong{font-size:14px;color:#7f1d1d;}

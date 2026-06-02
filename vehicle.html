@@ -124,5 +124,21 @@
 </div>
 
 <script src="assets/js/app.js"></script>
+
+<script>
+(function(){
+  function money(n){ return '$' + Math.round(Number(n || 0)).toLocaleString(); }
+  function addBiweekly(vehicle){
+    if (!vehicle || !vehicle.biweeklyPayment) return;
+    const target = document.querySelector('.vehicle-price, .price, [data-vehicle-price]');
+    if (!target || document.querySelector('.vehicle-payment-line')) return;
+    const div = document.createElement('div');
+    div.className = 'vehicle-payment-line';
+    div.innerHTML = 'Final biweekly <strong>' + money(vehicle.biweeklyPayment) + '</strong>';
+    target.insertAdjacentElement('afterend', div);
+  }
+  window.MLM_addBiweeklyToVehicleDetail = addBiweekly;
+})();
+</script>
 </body>
 </html>
