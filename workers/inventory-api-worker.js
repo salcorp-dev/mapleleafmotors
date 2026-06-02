@@ -49,8 +49,12 @@ export default {
       // Public endpoints
       // ─────────────────────────────────────────────
       if (url.pathname === "/inventory" && request.method === "GET") {
-        const raw = await env.INVENTORY_KV.get(INVENTORY_KEY);
-        return json(raw ? JSON.parse(raw) : []);
+        const inventory = await getInventory(env);
+        const publicInventory = inventory.filter(v => {
+          const status = String(v.status || "").toLowerCase();
+          return !(v.sold || v.archived || status === "sold" || status === "archived");
+        });
+        return json(publicInventory);
       }
 
       if (url.pathname === "/clients" && request.method === "GET") {
@@ -143,6 +147,10 @@ export default {
         if (Object.prototype.hasOwnProperty.call(body, "status")) leads[index].status = body.status;
         if (Object.prototype.hasOwnProperty.call(body, "notes")) leads[index].notes = body.notes;
         if (Object.prototype.hasOwnProperty.call(body, "assignedTo")) leads[index].assignedTo = body.assignedTo;
+        if (Object.prototype.hasOwnProperty.call(body, "attachedVehicleId")) leads[index].attachedVehicleId = body.attachedVehicleId;
+        if (Object.prototype.hasOwnProperty.call(body, "attachedVehicleTitle")) leads[index].attachedVehicleTitle = body.attachedVehicleTitle;
+        if (Object.prototype.hasOwnProperty.call(body, "attachedVehiclePrice")) leads[index].attachedVehiclePrice = Number(body.attachedVehiclePrice || 0);
+        if (Object.prototype.hasOwnProperty.call(body, "attachedVehicleStock")) leads[index].attachedVehicleStock = body.attachedVehicleStock;
         leads[index].updatedAt = new Date().toISOString();
         await env.INVENTORY_KV.put(LEADS_KEY, JSON.stringify(leads));
         return json({ ok: true, lead: leads[index] });

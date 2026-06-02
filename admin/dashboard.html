@@ -921,10 +921,10 @@
   </main>
 </div>
 
-<script src="../assets/js/admin.js?v=10.11"></script>
+<script src="../assets/js/admin.js?v=10.14"></script>
 
 <script>
-/* v10.11 Direct Live Inventory Save Binder + Working Auto Payment Calculator */
+/* v10.14 Direct Live Inventory Save Binder + Saved Biweekly + Archive */
 (function(){
   "use strict";
 
@@ -1091,7 +1091,7 @@
         <td>${sold ? '<span class="status-chip warn">Sold</span>' : '<span class="status-chip ok">Available</span>'}${v.featured ? '<br><span class="status-chip">Featured</span>' : ""}</td>
         <td>
           <button class="btn small light" type="button" data-v1011-edit="${esc(v.id)}">Edit</button>
-          <button class="btn small light" type="button" data-v1011-sold="${esc(v.id)}">${sold ? "Mark Available" : "Mark Sold"}</button>
+          <button class="btn small light" type="button" data-v1011-sold="${esc(v.id)}">${sold ? "Mark Available" : "Archive / Mark Sold"}</button>
           <button class="btn small light" type="button" data-v1011-delete="${esc(v.id)}">Delete</button>
         </td>
       </tr>`;
@@ -1253,7 +1253,7 @@
     if (!v) return;
     const sold = !!v.sold || String(v.status || "").toLowerCase() === "sold";
     try {
-      await api("/inventory/" + encodeURIComponent(id), { method:"PATCH", json:{ sold:!sold, status:!sold ? "sold" : "available" } });
+      await api("/inventory/" + encodeURIComponent(id), { method:"PATCH", json:{ sold:!sold, status:!sold ? "archived" : "available" } });
       await refresh();
     } catch(e) {
       alert("Could not update vehicle: " + e.message);
