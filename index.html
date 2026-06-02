@@ -12,30 +12,272 @@
 <link rel="icon" href="assets/images/maple-leaf-motors-logo.png">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"AutoDealer","name":"Maple Leaf Motors","telephone":"+1-204-963-0348","email":"mapleleaf_motors@outlook.com","address":{"@type":"PostalAddress","streetAddress":"611 Corydon Ave","addressLocality":"Winnipeg","addressRegion":"MB","postalCode":"R3L 0P3","addressCountry":"CA"},"openingHours":"Mo-Su 09:00-21:00"}</script>
 </head>
-<body> <!-- NAV -->
-<nav class="nav"> <div class="container nav-inner"> <a class="brand" href="index.html"> <img src="assets/images/maple-leaf-motors-logo.png" alt="Maple Leaf Motors"> <div class="brand-text"> <span class="brand-name">Maple Leaf Motors</span> <span class="brand-sub">Winnipeg Auto Brokerage</span> </div> </a> <button class="menu-btn" id="mobileToggle">☰ Menu</button> <div class="nav-links" id="navLinks"> <a class="active" href="index.html">Home</a> <a href="inventory.html">Inventory</a> <a href="financing.html">Financing</a> <a href="clients.html">Our Clients</a> <a href="locations.html">Locations</a> <a href="contact.html">Contact</a> <a class="btn btn-sm" href="financing.html#approval">Start Approval</a> </div> </div>
-</nav> <!-- HERO -->
-<header class="hero"> <div class="hero-bg-stripe"></div> <div class="hero-bg-accent"></div> <div class="container hero-grid"> <!-- Left copy --> <div class="hero-copy"> <div class="eyebrow">Winnipeg Auto Brokerage · Canada-wide</div> <h1>Find Your Next Vehicle</h1> <p class="lead">Browse inventory, see payment estimates, and start an approval request — all online, no pressure.</p> <div class="hero-actions"> <a class="btn btn-lg" href="financing.html#approval">Start Approval →</a> <a class="btn btn-outline btn-sm" href="inventory.html">Browse Inventory</a> </div> <div class="hero-trust"> <span>All credit welcome</span> <span class="hero-trust-dot"></span> <span>No sensitive info collected</span> <span class="hero-trust-dot"></span> <span>Open 7 days</span> <span class="hero-trust-dot"></span> <span>Fast follow-up</span> </div> <div class="quick-search"> <div class="quick-search-label">Quick Search</div> <div class="search-row"> <input id="heroSearch" placeholder="Search SUV, truck, sedan…"> <select id="heroBudget"> <option value="">Any budget</option> <option value="20000">Under $20,000</option> <option value="30000">Under $30,000</option> <option value="40000">Under $40,000</option> </select> </div> <div class="search-row-bottom"> <p class="muted" style="font-size:12px;font-family:var(--font-ui);margin:0;line-height:1.5;">Good credit · Bad credit · New to Canada · Self-employed · Pension · Bankruptcy · Consumer proposal</p> <a class="btn btn-dark" id="heroSearchBtn" href="inventory.html">Search</a> </div> </div> </div> <!-- Right showcase --> <div class="hero-approval-card"> <div class="approval-card-glow"></div> <div class="approval-card-inner"> <div class="approval-card-head"> <span class="approval-eyebrow">Approval Match</span> <h2>Find realistic options before you shop.</h2> <p>Answer a few quick questions and we'll match your situation with vehicles and financing that make sense.</p> </div> <div class="approval-card-divider"></div> <div class="approval-trust-list"> <div class="approval-trust-item"><span></span><div><strong>All credit situations welcome</strong><small>Good credit, rebuilding credit, or no credit history.</small></div></div> <div class="approval-trust-item"><span></span><div><strong>Flexible income situations</strong><small>New to Canada, self-employed, or pension income.</small></div></div> <div class="approval-trust-item"><span></span><div><strong>Bankruptcy and proposal support</strong><small>We work with all stages of financial recovery.</small></div></div> </div> <div class="approval-steps"> <div><b>1</b><span>Your situation</span></div> <div><b>2</b><span>Match vehicles</span></div> <div><b>3</b><span>Review options</span></div> <div><b>4</b><span>Pickup or delivery</span></div> </div> </div> <div class="approval-card-actions"> <a class="btn" href="financing.html#approval">Start Approval →</a> <a class="approval-card-link" href="inventory.html">Browse inventory</a> </div> </div> </div>
-</header> <!-- FEATURED INVENTORY -->
-<section class="section" style="padding-top:48px;"> <div class="container"> <div class="section-head"> <div class="section-head-left"> <div class="eyebrow">Live Inventory</div> <h2>Recently Added Inventory</h2> <span class="remote-status" id="remoteInventoryStatus" style="display:none;">Live inventory</span> </div> <a class="btn btn-outline" href="inventory.html">View All Vehicles →</a> </div> <div id="featuredInventory" class="inventory-scroll"></div> </div>
-</section> <!-- APPROVAL BAND -->
-<section class="section" style="padding-top:0;"> <div class="container"> <div class="approval-band"> <div style="position:relative;z-index:1;"> <div class="eyebrow">Financing Support</div> <h2>Start with the vehicle. We'll help with the financing.</h2> <p class="lead">Maple Leaf Motors works with buyers in all financial situations. Pick a vehicle you like, then start an approval request — fast, no-pressure.</p> <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:4px;"> <a class="btn" href="financing.html#approval">Start Approval →</a> <a class="btn btn-outline-white" href="tel:12049630348">Call (204) 963-0348</a> </div> </div> <div class="check-grid"> <div class="check">Good Credit</div> <div class="check">Bad Credit with Cosigner</div> <div class="check">No Credit</div> <div class="check">New to Canada</div> <div class="check">Self-Employed</div> <div class="check">Pension Income</div> <div class="check">Bankruptcy</div> <div class="check">Consumer Proposal</div> </div> </div> </div>
-</section> <!-- WHY US -->
-<section class="section" style="background:var(--bg-2);padding-top:52px;padding-bottom:52px;"> <div class="container"> <div style="text-align:center;margin-bottom:40px;"> <div class="eyebrow" style="justify-content:center;">Why Maple Leaf Motors</div> <h2>A simpler way to shop for a vehicle.</h2> </div> <div class="grid-4"> <div class="feature-card"> <div class="feature-icon"> <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><circle cx="12" cy="14" r="2"/></svg> </div> <h3>Inventory First</h3> <p>Browse vehicles and see real prices before starting any approval process. No surprises.</p> </div> <div class="feature-card"> <div class="feature-icon"> <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> </div> <h3>Fast Follow-Up</h3> <p>Approval requests go directly to our team for quick, personal follow-up — usually same day.</p> </div> <div class="feature-card"> <div class="feature-icon"> <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> </div> <h3>Canada-Wide</h3> <p>Serving buyers across Manitoba, Saskatchewan, Alberta, Ontario and First Nations communities.</p> </div> <div class="feature-card"> <div class="feature-icon"> <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> </div> <h3>Privacy First</h3> <p>No personal or sensitive information is asked for on this website — only when you're interested and choose to reach out.</p> </div> </div> </div>
-</section> <!-- REVIEWS -->
-<section class="section"> <div class="container"> <div class="section-head"> <div class="section-head-left"> <div class="eyebrow">Customer Reviews</div> <h2>What buyers are saying</h2> </div> </div> <div id="reviewsGrid" class="grid-3"></div> </div>
-</section> <!-- SEO HIDDEN -->
-<section class="seo-hidden"> <h2>Vehicle Financing Across Canada</h2> <p>Maple Leaf Motors supports vehicle financing in Winnipeg, Brandon, Steinbach, Selkirk, Thompson, Regina, Saskatoon, Calgary, Edmonton, Toronto, Ottawa, Hamilton, Brampton, Mississauga, First Nations communities, reserve communities and northern communities.</p>
-</section> <!-- FOOTER -->
-<footer class="footer"> <div class="container"> <div class="footer-grid"> <div> <div class="footer-brand-name">Maple Leaf Motors</div> <p class="footer-desc">Winnipeg-based auto brokerage helping Canadians find and finance vehicles — regardless of credit situation.</p> </div> <div> <h4>Explore</h4> <ul class="footer-links"> <li><a href="inventory.html">Browse Inventory</a></li> <li><a href="financing.html">Financing</a></li> <li><a href="clients.html">Our Clients</a></li> <li><a href="locations.html">Service Areas</a></li> <li><a href="contact.html">Contact Us</a></li> </ul> </div> <div> <h4>Financing</h4> <ul class="footer-links"> <li><a href="financing.html">Good Credit</a></li> <li><a href="financing.html">Bad Credit + Cosigner</a></li> <li><a href="financing.html">New to Canada</a></li> <li><a href="financing.html">Self-Employed</a></li> </ul> </div> <div> <h4>Contact</h4> <ul class="footer-links"> <li><a href="tel:12049630348" class="footer-phone-link">(204) 963-0348</a></li> <li><a href="mailto:mapleleaf_motors@outlook.com">mapleleaf_motors@outlook.com</a></li> <li>611 Corydon Ave<br>Winnipeg, MB R3L 0P3</li> <li>Open 9 AM – 9 PM, 7 days</li> </ul> </div> </div> <div class="footer-bottom"> <span>© 2025 Maple Leaf Motors. Approval subject to lender requirements.</span> <span>No personal or sensitive information is collected unless you choose to reach out.</span> </div> </div>
-</footer> <!-- STICKY MOBILE BAR -->
-<div class="sticky-mobile"> <div class="sticky-bar"> <a href="tel:12049630348">Call Us</a> <a href="inventory.html">Inventory</a> <a class="primary" href="financing.html#approval">Start Approval →</a> </div>
-</div> <script src="assets/js/app.js"></script>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="container nav-inner">
+    <a class="brand" href="index.html">
+      <img src="assets/images/maple-leaf-motors-logo.png" alt="Maple Leaf Motors">
+      <div class="brand-text">
+        <span class="brand-name">Maple Leaf Motors</span>
+        <span class="brand-sub">Winnipeg Auto Brokerage</span>
+      </div>
+    </a>
+    <button class="menu-btn" id="mobileToggle">☰ Menu</button>
+    <div class="nav-links" id="navLinks">
+      <a class="active" href="index.html">Home</a>
+      <a href="inventory.html">Inventory</a>
+      <a href="financing.html">Financing</a>
+      <a href="clients.html">Our Clients</a>
+      <a href="locations.html">Locations</a>
+      <a href="contact.html">Contact</a>
+      <a class="btn btn-sm" href="financing.html#approval">Start Approval</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<header class="hero">
+  <div class="hero-bg-stripe"></div>
+  <div class="hero-bg-accent"></div>
+  <div class="container hero-grid">
+    <!-- Left copy -->
+    <div class="hero-copy">
+      <div class="eyebrow">Winnipeg Auto Brokerage · Canada-wide</div>
+      <h1>Find Your Next Vehicle</h1>
+      <p class="lead">Browse inventory, see payment estimates, and start an approval request — all online, no pressure.</p>
+      <div class="hero-actions">
+        <a class="btn btn-lg" href="financing.html#approval">Start Approval →</a>
+        <a class="btn btn-outline btn-sm" href="inventory.html">Browse Inventory</a>
+      </div>
+      <div class="hero-trust">
+        <span>All credit welcome</span>
+        <span class="hero-trust-dot"></span>
+        <span>No sensitive info collected</span>
+        <span class="hero-trust-dot"></span>
+        <span>Open 7 days</span>
+        <span class="hero-trust-dot"></span>
+        <span>Fast follow-up</span>
+      </div>
+
+      <div class="quick-search">
+        <div class="quick-search-label">Quick Search</div>
+        <div class="search-row">
+          <input id="heroSearch" placeholder="Search SUV, truck, sedan…">
+          <select id="heroBudget">
+            <option value="">Any budget</option>
+            <option value="20000">Under $20,000</option>
+            <option value="30000">Under $30,000</option>
+            <option value="40000">Under $40,000</option>
+          </select>
+        </div>
+        <div class="search-row-bottom">
+          <p class="muted" style="font-size:12px;font-family:var(--font-ui);margin:0;line-height:1.5;">Good credit · Bad credit · New to Canada · Self-employed · Pension · Bankruptcy · Consumer proposal</p>
+          <a class="btn btn-dark" id="heroSearchBtn" href="inventory.html">Search</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right showcase -->
+    <div class="hero-approval-card">
+      <div class="approval-card-glow"></div>
+      <div class="approval-card-inner">
+        <div class="approval-card-head">
+          <span class="approval-eyebrow">Approval Match</span>
+          <h2>Find realistic options before you shop.</h2>
+          <p>Answer a few quick questions and we'll match your situation with vehicles and financing that make sense.</p>
+        </div>
+        <div class="approval-card-divider"></div>
+        <div class="approval-trust-list">
+          <div class="approval-trust-item"><span></span><div><strong>All credit situations welcome</strong><small>Good credit, rebuilding credit, or no credit history.</small></div></div>
+          <div class="approval-trust-item"><span></span><div><strong>Flexible income situations</strong><small>New to Canada, self-employed, or pension income.</small></div></div>
+          <div class="approval-trust-item"><span></span><div><strong>Bankruptcy and proposal support</strong><small>We work with all stages of financial recovery.</small></div></div>
+        </div>
+        <div class="approval-steps">
+          <div><b>1</b><span>Your situation</span></div>
+          <div><b>2</b><span>Match vehicles</span></div>
+          <div><b>3</b><span>Review options</span></div>
+          <div><b>4</b><span>Pickup or delivery</span></div>
+        </div>
+      </div>
+      <div class="approval-card-actions">
+        <a class="btn" href="financing.html#approval">Start Approval →</a>
+        <a class="approval-card-link" href="inventory.html">Browse inventory</a>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- FEATURED INVENTORY -->
+<section class="section" style="padding-top:48px;">
+  <div class="container">
+    <div class="section-head">
+      <div class="section-head-left">
+        <div class="eyebrow">Live Inventory</div>
+        <h2>Recently Added Inventory</h2>
+        <span class="remote-status" id="remoteInventoryStatus" style="display:none;">Live inventory</span>
+      </div>
+      <a class="btn btn-outline" href="inventory.html">View All Vehicles →</a>
+    </div>
+    <div id="featuredInventory" class="inventory-scroll"></div>
+  </div>
+</section>
+
+<!-- APPROVAL BAND -->
+<section class="section" style="padding-top:0;">
+  <div class="container">
+    <div class="approval-band">
+      <div style="position:relative;z-index:1;">
+        <div class="eyebrow">Financing Support</div>
+        <h2>Start with the vehicle. We'll help with the financing.</h2>
+        <p class="lead">Maple Leaf Motors works with buyers in all financial situations. Pick a vehicle you like, then start an approval request — fast, no-pressure.</p>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:4px;">
+          <a class="btn" href="financing.html#approval">Start Approval →</a>
+          <a class="btn btn-outline-white" href="tel:12049630348">Call (204) 963-0348</a>
+        </div>
+      </div>
+      <div class="check-grid">
+        <div class="check">Good Credit</div>
+        <div class="check">Bad Credit with Cosigner</div>
+        <div class="check">No Credit</div>
+        <div class="check">New to Canada</div>
+        <div class="check">Self-Employed</div>
+        <div class="check">Pension Income</div>
+        <div class="check">Bankruptcy</div>
+        <div class="check">Consumer Proposal</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- WHY US -->
+<section class="section" style="background:var(--bg-2);padding-top:52px;padding-bottom:52px;">
+  <div class="container">
+    <div style="text-align:center;margin-bottom:40px;">
+      <div class="eyebrow" style="justify-content:center;">Why Maple Leaf Motors</div>
+      <h2>A simpler way to shop for a vehicle.</h2>
+    </div>
+    <div class="grid-4">
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><circle cx="12" cy="14" r="2"/></svg>
+        </div>
+        <h3>Inventory First</h3>
+        <p>Browse vehicles and see real prices before starting any approval process. No surprises.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        </div>
+        <h3>Fast Follow-Up</h3>
+        <p>Approval requests go directly to our team for quick, personal follow-up — usually same day.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+        </div>
+        <h3>Canada-Wide</h3>
+        <p>Serving buyers across Manitoba, Saskatchewan, Alberta, Ontario and First Nations communities.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        </div>
+        <h3>Privacy First</h3>
+        <p>No personal or sensitive information is asked for on this website — only when you're interested and choose to reach out.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- REVIEWS -->
+<section class="section">
+  <div class="container">
+    <div class="section-head">
+      <div class="section-head-left">
+        <div class="eyebrow">Customer Reviews</div>
+        <h2>What buyers are saying</h2>
+      </div>
+    </div>
+    <div id="reviewsGrid" class="grid-3"></div>
+  </div>
+</section>
+
+<!-- SEO HIDDEN -->
+<section class="seo-hidden">
+  <h2>Vehicle Financing Across Canada</h2>
+  <p>Maple Leaf Motors supports vehicle financing in Winnipeg, Brandon, Steinbach, Selkirk, Thompson, Regina, Saskatoon, Calgary, Edmonton, Toronto, Ottawa, Hamilton, Brampton, Mississauga, First Nations communities, reserve communities and northern communities.</p>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-brand-name">Maple Leaf Motors</div>
+        <p class="footer-desc">Winnipeg-based auto brokerage helping Canadians find and finance vehicles — regardless of credit situation.</p>
+      </div>
+      <div>
+        <h4>Explore</h4>
+        <ul class="footer-links">
+          <li><a href="inventory.html">Browse Inventory</a></li>
+          <li><a href="financing.html">Financing</a></li>
+          <li><a href="clients.html">Our Clients</a></li>
+          <li><a href="locations.html">Service Areas</a></li>
+          <li><a href="contact.html">Contact Us</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Financing</h4>
+        <ul class="footer-links">
+          <li><a href="financing.html">Good Credit</a></li>
+          <li><a href="financing.html">Bad Credit + Cosigner</a></li>
+          <li><a href="financing.html">New to Canada</a></li>
+          <li><a href="financing.html">Self-Employed</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Contact</h4>
+        <ul class="footer-links">
+          <li><a href="tel:12049630348" class="footer-phone-link">(204) 963-0348</a></li>
+          <li><a href="mailto:mapleleaf_motors@outlook.com">mapleleaf_motors@outlook.com</a></li>
+          <li>611 Corydon Ave<br>Winnipeg, MB R3L 0P3</li>
+          <li>Open 9 AM – 9 PM, 7 days</li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2025 Maple Leaf Motors. Approval subject to lender requirements.</span>
+      <span>No personal or sensitive information is collected unless you choose to reach out.</span>
+    </div>
+  </div>
+</footer>
+
+<!-- STICKY MOBILE BAR -->
+<div class="sticky-mobile">
+  <div class="sticky-bar">
+    <a href="tel:12049630348">Call Us</a>
+    <a href="inventory.html">Inventory</a>
+    <a class="primary" href="financing.html#approval">Start Approval →</a>
+  </div>
+</div>
+
+<script src="assets/js/app.js"></script>
 <script>
 // Hero search → inventory with params
-document.getElementById('heroSearchBtn').addEventListener('click', function(e) { const q = document.getElementById('heroSearch').value.trim(); const budget = document.getElementById('heroBudget').value; const params = new URLSearchParams(); if (q) params.set('search', q); if (budget) params.set('price', budget); const qs = params.toString(); window.location.href = 'inventory.html' + (qs ? '?' + qs : ''); e.preventDefault();
+document.getElementById('heroSearchBtn').addEventListener('click', function(e) {
+  const q = document.getElementById('heroSearch').value.trim();
+  const budget = document.getElementById('heroBudget').value;
+  const params = new URLSearchParams();
+  if (q) params.set('search', q);
+  if (budget) params.set('price', budget);
+  const qs = params.toString();
+  window.location.href = 'inventory.html' + (qs ? '?' + qs : '');
+  e.preventDefault();
 });
-document.getElementById('heroSearch').addEventListener('keypress', function(e) { if (e.key === 'Enter') document.getElementById('heroSearchBtn').click();
+document.getElementById('heroSearch').addEventListener('keypress', function(e) {
+  if (e.key === 'Enter') document.getElementById('heroSearchBtn').click();
 });
 </script>
 </body>
