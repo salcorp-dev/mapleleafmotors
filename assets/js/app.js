@@ -15,7 +15,7 @@ function biweekly(vehicle) {
 }
 function isPublicVehicle(v) {
   const status = String(v?.status || '').toLowerCase();
-  return !(v?.sold || v?.archived || status === 'sold' || status === 'archived');
+  return !(v?.archived === true || status === 'archived');
 }
 function paymentLine(v) {
   const b = biweekly(v);

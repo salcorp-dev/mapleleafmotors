@@ -921,10 +921,10 @@
   </main>
 </div>
 
-<script src="../assets/js/admin.js?v=10.14"></script>
+<script src="../assets/js/admin.js?v=10.15"></script>
 
 <script>
-/* v10.14 Direct Live Inventory Save Binder + Saved Biweekly + Archive */
+/* v10.15 Direct Live Inventory Save Binder + Archive Restore Fix */
 (function(){
   "use strict";
 
@@ -1065,7 +1065,7 @@
     const f = qs("#liveInventoryFilter")?.value || "";
     return LIVE_INV.filter(v => {
       const text = [v.title, v.year, v.make, v.model, v.trim, v.vin, v.stockNumber, v.bodyStyle, v.drivetrain, v.transmission].join(" ").toLowerCase();
-      const sold = !!v.sold || String(v.status || "").toLowerCase() === "sold";
+      const sold = !!v.sold || !!v.archived || ["sold","archived"].includes(String(v.status || "").toLowerCase());
       if (q && !text.includes(q)) return false;
       if (f === "available" && sold) return false;
       if (f === "sold" && !sold) return false;
@@ -1080,7 +1080,7 @@
 
     const rows = filtered();
     tbody.innerHTML = rows.map(v => {
-      const sold = !!v.sold || String(v.status || "").toLowerCase() === "sold";
+      const sold = !!v.sold || !!v.archived || ["sold","archived"].includes(String(v.status || "").toLowerCase());
       const image = img(v);
       const biweekly = Number(v.biweeklyPayment || 0);
       return `<tr>
@@ -1251,7 +1251,7 @@
   async function toggleSold(id){
     const v = LIVE_INV.find(x => String(x.id) === String(id));
     if (!v) return;
-    const sold = !!v.sold || String(v.status || "").toLowerCase() === "sold";
+    const sold = !!v.sold || !!v.archived || ["sold","archived"].includes(String(v.status || "").toLowerCase());
     try {
       await api("/inventory/" + encodeURIComponent(id), { method:"PATCH", json:{ sold:!sold, status:!sold ? "archived" : "available" } });
       await refresh();

@@ -50,9 +50,11 @@ export default {
       // ─────────────────────────────────────────────
       if (url.pathname === "/inventory" && request.method === "GET") {
         const inventory = await getInventory(env);
+        // Public site hides only vehicles explicitly archived from admin.
+        // This avoids old inventory disappearing just because an older import used "sold" fields differently.
         const publicInventory = inventory.filter(v => {
           const status = String(v.status || "").toLowerCase();
-          return !(v.sold || v.archived || status === "sold" || status === "archived");
+          return !(v.archived === true || status === "archived");
         });
         return json(publicInventory);
       }

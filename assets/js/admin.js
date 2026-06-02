@@ -27,7 +27,7 @@ function leadVehicleOptions(selectedId = '') {
   const vehicles = Array.isArray(LIVE_INVENTORY) ? LIVE_INVENTORY : [];
   const available = vehicles.filter(v => {
     const status = String(v.status || '').toLowerCase();
-    return !(v.sold || v.archived || status === 'sold' || status === 'archived');
+    return !(v.archived || status === 'archived');
   });
   return `<option value="">No vehicle attached</option>` + available.map(v => {
     const id = String(v.id || '');
