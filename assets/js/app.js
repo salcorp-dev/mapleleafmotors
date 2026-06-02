@@ -100,7 +100,7 @@ function vehicleCard(v) {
       </div>
       <div class="vehicle-actions">
         <a class="btn btn-outline btn-sm" href="vehicle.html?id=${encodeURIComponent(v.id)}">View Details</a>
-        <a class="btn btn-sm" href="financing.html?vehicle=${encodeURIComponent(v.id)}">Get Approved</a>
+        <a class="btn btn-sm" href="financing.html?vehicle=${encodeURIComponent(v.id)}#approval">Get Approved</a>
       </div>
     </div>
   </article>`;
@@ -353,7 +353,7 @@ async function renderVehicle() {
         </div>` : ''}
 
         <div class="cta-stack">
-          <a class="btn btn-full btn-lg" href="financing.html?vehicle=${encodeURIComponent(v.id)}">Start Approval →</a>
+          <a class="btn btn-full btn-lg" href="financing.html?vehicle=${encodeURIComponent(v.id)}#approval">Start Approval →</a>
           <a class="btn btn-full btn-outline" href="tel:12049630348">📞 Call (204) 963-0348</a>
           <a class="btn btn-ghost btn-full" href="inventory.html" style="text-align:center;">← Back to Inventory</a>
         </div>
@@ -416,9 +416,45 @@ async function renderVehicle() {
       if (Math.abs(dx) > 40) setMainImage((currentIdx + (dx < 0 ? 1 : -1) + galleryImages.length) % galleryImages.length);
     });
   }
+
+  // Render similar vehicles below the detail
+  renderSimilarVehicles(v, d);
 }
 
-// ── Save Lead ──
+// ── Similar Vehicles ──
+function renderSimilarVehicles(current, d) {
+  const container = $('#similarVehicles');
+  if (!container) return;
+
+  const all = (d.inventory || []).filter(v => !v.sold && v.id !== current.id);
+
+  // Score by similarity: same body style, same make, similar price range
+  function score(v) {
+    let s = 0;
+    if (v.bodyStyle && v.bodyStyle === current.bodyStyle) s += 3;
+    if (v.make && v.make === current.make) s += 2;
+    const priceDiff = Math.abs(Number(v.price || 0) - Number(current.price || 0));
+    if (priceDiff < 5000) s += 2;
+    else if (priceDiff < 10000) s += 1;
+    if (v.featured) s += 1;
+    return s;
+  }
+
+  const similar = all
+    .map(v => ({ v, s: score(v) }))
+    .sort((a, b) => b.s - a.s)
+    .slice(0, 4)
+    .map(x => x.v);
+
+  if (!similar.length) {
+    container.closest('.similar-section')?.remove();
+    return;
+  }
+
+  container.innerHTML = similar.map(vehicleCard).join('');
+}
+
+
 function saveLead(d) {
   d.createdAt = new Date().toISOString();
   d.status = 'NEW LEAD';

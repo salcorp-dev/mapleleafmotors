@@ -54,7 +54,15 @@
       step.classList.toggle('active', Number(step.dataset.step) === currentStep);
     });
     updateProgress();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // On mobile the form card is below the hero panel, so scroll to the form card
+    // rather than the page top so the user stays in context.
+    const formCard = qs('.funnel-form-card') || qs('.funnel-shell');
+    if (formCard && window.innerWidth < 960) {
+      const top = formCard.getBoundingClientRect().top + window.scrollY - 80;
+      window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   }
 
   function setOption(group, btn) {
@@ -159,6 +167,21 @@
 
       const form = qs('#financeFunnelForm');
       const success = qs('#funnelSuccess');
+
+      // Populate personalized summary
+      const summary = qs('#funnelSuccessSummary');
+      if (summary) {
+        const parts = [];
+        if (lead.vehicleType)      parts.push(`<span class="success-pill">${lead.vehicleType}</span>`);
+        if (lead.creditSituation)  parts.push(`<span class="success-pill">${lead.creditSituation}</span>`);
+        if (lead.incomeType)       parts.push(`<span class="success-pill">${lead.incomeType}</span>`);
+        if (lead.budget)           parts.push(`<span class="success-pill">${lead.budget}</span>`);
+        if (lead.city && lead.province) parts.push(`<span class="success-pill">${lead.city}, ${lead.province}</span>`);
+        if (parts.length) {
+          summary.innerHTML = `<p class="success-summary-label">Here's what we received:</p><div class="success-pills">${parts.join('')}</div>`;
+        }
+      }
+
       if (form) form.style.display = 'none';
       if (success) success.classList.add('active');
     } catch (err) {
@@ -173,6 +196,10 @@
   }
 
   function initFunnel() {
+    // Capture vehicle ID from URL if coming from a vehicle detail page
+    const vehicleParam = new URLSearchParams(location.search).get('vehicle');
+    if (vehicleParam) funnelState.vehicleId = vehicleParam;
+
     qsa('.funnel-options').forEach(group => {
       group.addEventListener('click', e => {
         const btn = e.target.closest('.funnel-option');
@@ -207,6 +234,27 @@
     }
 
     if (form) form.addEventListener('submit', submitLead);
+
+    qsa('.funnel-consent').forEach(label => {
+      const checkbox = qs('input[type="checkbox"]', label);
+      if (!checkbox) return;
+
+      label.addEventListener('click', e => {
+        // Let direct checkbox clicks work normally.
+        if (e.target === checkbox) return;
+
+        e.preventDefault();
+        checkbox.checked = !checkbox.checked;
+        checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+        clearError();
+      });
+
+      checkbox.addEventListener('change', () => {
+        funnelState.consent = checkbox.checked;
+        label.classList.toggle('checked', checkbox.checked);
+        clearError();
+      });
+    });
 
     updateProgress();
     restoreSelectedOptions();

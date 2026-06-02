@@ -7,148 +7,521 @@
 <link rel="stylesheet" href="../assets/css/styles.css">
 <link rel="icon" href="../assets/images/maple-leaf-motors-logo.png">
 <style>
-  .admin-stat-card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 22px 26px; box-shadow: var(--shadow-sm); }
-  .admin-stat-number { font-family: var(--font-display); font-size: 36px; font-weight: 800; color: var(--ink); line-height: 1; }
-  .admin-stat-label { font-family: var(--font-ui); font-size: 13px; color: var(--muted); margin-top: 4px; font-weight: 500; }
-  .sidebar .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
-  .sidebar .brand img { width: 38px; height: 38px; border-radius: 10px; object-fit: contain; }
-  .sidebar .brand strong { color: #fff; font-family: var(--font-display); font-size: 15px; letter-spacing: .04em; }
-  .sidebar p { font-family: var(--font-ui); font-size: 13px; color: #667085; margin: 0 0 20px; line-height: 1.5; }
-  .sidebar hr { border: none; border-top: 1px solid rgba(255,255,255,.08); margin: 20px 0; }
-  .main h1 { font-size: 28px; margin-bottom: 6px; }
-  .main .sub { font-family: var(--font-ui); font-size: 14px; color: var(--muted); margin-bottom: 24px; }
+/* ── Admin Base ── */
+.admin-shell { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; background: #f0f2f7; }
+.sidebar {
+  background: #080b12;
+  color: #fff;
+  padding: 22px 18px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.sidebar-brand { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+.sidebar-brand img { width: 36px; height: 36px; border-radius: 9px; object-fit: contain; }
+.sidebar-brand strong { color: #fff; font-family: var(--font-display); font-size: 14px; letter-spacing: .06em; text-transform: uppercase; }
+.sidebar-sub { font-family: var(--font-ui); font-size: 11px; color: #4a5568; margin: 0 0 18px; padding-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,.07); }
+.sidebar-section { font-family: var(--font-ui); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; color: #374151; margin: 14px 0 6px 10px; }
+.sidebar-link {
+  display: flex; align-items: center; gap: 9px;
+  padding: 10px 12px; border-radius: 10px;
+  color: #9ca3af; font-family: var(--font-ui); font-size: 13px; font-weight: 600;
+  margin-bottom: 2px; transition: all .15s; cursor: pointer; border: none; background: none; width: 100%; text-align: left;
+}
+.sidebar-link:hover, .sidebar-link.active { background: rgba(255,255,255,.08); color: #fff; }
+.sidebar-link svg { flex-shrink: 0; opacity: .7; }
+.sidebar-link.active svg { opacity: 1; }
+.sidebar-spacer { flex: 1; }
+.sidebar-bottom { margin-top: 16px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,.07); display: flex; flex-direction: column; gap: 6px; }
+.sidebar-bottom a, .sidebar-bottom button { display: block; padding: 9px 12px; border-radius: 10px; color: #6b7280; font-family: var(--font-ui); font-size: 12px; font-weight: 600; text-align: center; border: 1px solid rgba(255,255,255,.10); background: rgba(255,255,255,.04); cursor: pointer; transition: .15s; }
+.sidebar-bottom a:hover, .sidebar-bottom button:hover { background: rgba(255,255,255,.10); color: #fff; }
 
-  .client-admin-grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-bottom:24px; }
-  .client-admin-card { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:24px; box-shadow:var(--shadow-sm); }
-  .client-admin-card h3 { margin-bottom:8px; }
-  .client-admin-card p { font-family:var(--font-ui); font-size:13px; color:var(--muted); margin-bottom:16px; }
-  .client-admin-card input, .client-admin-card textarea, .client-admin-card select {
-    width:100%; margin-bottom:10px; padding:12px 13px; border:1px solid var(--line);
-    border-radius:10px; font-family:var(--font-ui); font-size:14px; background:#fff;
-  }
-  .client-admin-card textarea { min-height:84px; resize:vertical; }
-  .client-preview { display:flex; gap:8px; flex-wrap:wrap; margin:8px 0 12px; }
-  .client-preview img { width:82px; height:62px; object-fit:cover; border-radius:8px; border:1px solid var(--line); }
-  .admin-help { font-family:var(--font-ui); font-size:13px; color:var(--muted); line-height:1.55; }
-  .status-chip { display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border-radius:999px; background:#f1f5f9; color:#475569; font-family:var(--font-ui); font-size:12px; font-weight:700; }
-  .status-chip.ok { background:#dcfce7; color:#166534; }
-  .status-chip.warn { background:#fef3c7; color:#92400e; }
-  @media(max-width:860px){ .client-admin-grid{ grid-template-columns:1fr; } }
+/* ── Main Content ── */
+.main { padding: 28px 28px 60px; min-width: 0; }
+.main-header { margin-bottom: 24px; }
+.main-header h1 { font-size: 24px; margin: 0 0 4px; color: var(--ink); }
+.main-header p { font-family: var(--font-ui); font-size: 13px; color: var(--muted); margin: 0; }
+
+/* ── Stat Cards ── */
+.stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 24px; }
+.stat-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 18px 20px;
+  box-shadow: 0 2px 8px rgba(16,24,40,.05);
+  position: relative;
+  overflow: hidden;
+}
+.stat-card-accent {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--stat-color, var(--brand)), transparent);
+}
+.stat-number { font-family: var(--font-display); font-size: 36px; font-weight: 900; color: var(--ink); line-height: 1; margin-bottom: 4px; }
+.stat-label { font-family: var(--font-ui); font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .08em; }
+.stat-delta { font-family: var(--font-ui); font-size: 11px; font-weight: 700; margin-top: 6px; }
+.stat-delta.up { color: #16a34a; }
+.stat-delta.neutral { color: var(--muted); }
+
+/* ── Tabs ── */
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 20px; background: #fff; padding: 6px; border-radius: 14px; border: 1px solid var(--line); width: fit-content; }
+.tab {
+  border: none; background: transparent; border-radius: 10px; padding: 9px 16px;
+  cursor: pointer; font-family: var(--font-ui); font-size: 13px; font-weight: 600;
+  color: var(--muted); transition: all .15s;
+}
+.tab.active { background: var(--ink); color: #fff; box-shadow: 0 2px 8px rgba(12,17,29,.18); }
+.tab:hover:not(.active) { background: var(--bg); color: var(--text); }
+.admin-section { display: none; }
+.admin-section.active { display: block; }
+
+/* ── Section header row ── */
+.section-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+.section-toolbar h2 { margin: 0; font-size: 18px; color: var(--ink); }
+.section-toolbar p { margin: 2px 0 0; font-family: var(--font-ui); font-size: 12px; color: var(--muted); }
+
+/* ── Lead Pipeline Funnel Visual ── */
+.pipeline-visual {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 24px;
+  margin-bottom: 22px;
+  box-shadow: 0 2px 8px rgba(16,24,40,.05);
+}
+.pipeline-visual-title {
+  font-family: var(--font-ui); font-size: 12px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .10em; color: var(--muted); margin-bottom: 18px;
+}
+.funnel-bars { display: grid; gap: 8px; }
+.funnel-bar-row {
+  display: grid;
+  grid-template-columns: 160px 1fr 42px;
+  align-items: center;
+  gap: 12px;
+}
+.funnel-bar-label { font-family: var(--font-ui); font-size: 12px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.funnel-bar-track { background: #f1f4f9; border-radius: 999px; height: 10px; overflow: hidden; }
+.funnel-bar-fill { height: 100%; border-radius: 999px; transition: width .5s ease; min-width: 4px; }
+.funnel-bar-count { font-family: var(--font-ui); font-size: 13px; font-weight: 800; color: var(--ink); text-align: right; }
+
+/* Bar colors by status */
+.bar-new       { background: #3b82f6; }
+.bar-contacted { background: #8b5cf6; }
+.bar-appsent   { background: #f59e0b; }
+.bar-dealer    { background: #f97316; }
+.bar-approved  { background: #22c55e; }
+.bar-cosigner  { background: #ec4899; }
+.bar-vehicle   { background: #06b6d4; }
+.bar-delivered { background: #10b981; }
+.bar-lost      { background: #e5e7eb; }
+
+/* ── Status Badge Chips ── */
+.status-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 9px; border-radius: 999px;
+  font-family: var(--font-ui); font-size: 11px; font-weight: 700;
+  white-space: nowrap;
+}
+.status-NEW-LEAD        { background: #eff6ff; color: #1d4ed8; }
+.status-CONTACTED       { background: #f5f3ff; color: #6d28d9; }
+.status-APPLICATION-SENT { background: #fffbeb; color: #92400e; }
+.status-DEALERTRACK-SUBMITTED { background: #fff7ed; color: #9a3412; }
+.status-APPROVED        { background: #f0fdf4; color: #166534; }
+.status-NEEDS-COSIGNER  { background: #fdf2f8; color: #9d174d; }
+.status-VEHICLE-SELECTED { background: #ecfeff; color: #155e75; }
+.status-DELIVERED       { background: #f0fdf4; color: #14532d; }
+.status-LOST            { background: #f9fafb; color: #6b7280; }
+
+/* ── Lead Cards View (mobile-first layout) ── */
+.lead-flow-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; margin-bottom: 20px; }
+.lead-flow-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: 0 1px 4px rgba(16,24,40,.04);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  position: relative;
+  overflow: hidden;
+  transition: box-shadow .18s;
+}
+.lead-flow-card:hover { box-shadow: 0 6px 20px rgba(16,24,40,.09); }
+.lead-flow-card-top { position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+.lead-flow-card-name { font-family: var(--font-ui); font-size: 14px; font-weight: 800; color: var(--ink); margin-top: 4px; }
+.lead-flow-card-meta { font-family: var(--font-ui); font-size: 12px; color: var(--muted); line-height: 1.5; }
+.lead-flow-card-details { display: flex; flex-wrap: wrap; gap: 6px; }
+.lead-detail-pill { background: #f1f4f9; border-radius: 6px; padding: 3px 8px; font-family: var(--font-ui); font-size: 11px; font-weight: 600; color: var(--text); }
+.lead-flow-card-footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-top: 10px; border-top: 1px solid var(--line); }
+
+/* ── Conversion funnel chart ── */
+.conversion-strip {
+  display: flex;
+  gap: 0;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+.conv-stage {
+  flex: 1;
+  padding: 14px 10px;
+  text-align: center;
+  border-right: 1px solid var(--line);
+  position: relative;
+}
+.conv-stage:last-child { border-right: none; }
+.conv-stage-num { font-family: var(--font-display); font-size: 28px; font-weight: 900; line-height: 1; }
+.conv-stage-label { font-family: var(--font-ui); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); margin-top: 4px; }
+
+/* ── Table ── */
+.table { width: 100%; border-collapse: collapse; background: white; border-radius: 14px; overflow: hidden; box-shadow: 0 1px 4px rgba(16,24,40,.04); border: 1px solid var(--line); }
+.table th, .table td { padding: 12px 14px; border-bottom: 1px solid var(--line); text-align: left; font-family: var(--font-ui); font-size: 13px; }
+.table tr:last-child td { border-bottom: none; }
+.table th { font-size: 10px; text-transform: uppercase; letter-spacing: .09em; color: var(--muted); font-weight: 700; background: #f8f9fc; white-space: nowrap; }
+.table td { vertical-align: top; }
+.table-wrap { overflow-x: auto; border-radius: 14px; }
+
+/* ── Kanban ── */
+.kanban-board { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; overflow-x: auto; }
+.kanban-lane {
+  background: #f8f9fc;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 14px;
+  min-width: 180px;
+}
+.lane-header { font-family: var(--font-ui); font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .09em; color: var(--muted); margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; }
+.lane-count { background: var(--line-2); color: var(--text); border-radius: 999px; padding: 2px 7px; font-size: 10px; font-weight: 800; }
+.lead-mini {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 7px;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  box-shadow: 0 1px 3px rgba(16,24,40,.04);
+}
+.lead-mini b { display: block; color: var(--ink); font-size: 13px; margin-bottom: 2px; }
+.lead-mini span { color: var(--muted); }
+
+/* ── Lead stat cards ── */
+.lead-stat-strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 18px; }
+.lead-stat-card {
+  background: #fff; border: 1px solid var(--line); border-radius: 14px;
+  padding: 16px 18px; box-shadow: 0 1px 4px rgba(16,24,40,.04);
+}
+.lead-stat-card strong { display: block; font-family: var(--font-display); font-size: 32px; font-weight: 900; color: var(--ink); line-height: 1; }
+.lead-stat-card span { font-family: var(--font-ui); font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .08em; margin-top: 4px; display: block; }
+
+/* ── Filters ── */
+.lead-filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; }
+.lead-filters input, .lead-filters select {
+  padding: 9px 13px; border: 1px solid var(--line); border-radius: 10px;
+  font-family: var(--font-ui); font-size: 13px; background: #fff; color: var(--ink);
+  font-weight: 500;
+}
+.lead-filters input { max-width: 280px; }
+.lead-filters select { max-width: 200px; }
+
+/* ── Lead note/save area ── */
+.lead-note-box { min-width: 180px; min-height: 48px; resize: vertical; }
+.lead-row-new { background: #fffbeb !important; }
+.badge-source { display: inline-flex; border-radius: 999px; padding: 4px 8px; background: #e0f2fe; color: #075985; font: 700 10px/1 var(--font-ui); }
+
+/* ── Other admin cards ── */
+.admin-card { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 22px; box-shadow: 0 1px 4px rgba(16,24,40,.04); }
+.admin-card + .admin-card { margin-top: 16px; }
+.admin-card h3 { margin: 0 0 6px; font-size: 15px; }
+.admin-card p.sub { font-family: var(--font-ui); font-size: 13px; color: var(--muted); margin: 0 0 14px; }
+.admin-card input, .admin-card textarea, .admin-card select {
+  width: 100%; margin-bottom: 10px; padding: 11px 13px; border: 1px solid var(--line);
+  border-radius: 10px; font-family: var(--font-ui); font-size: 14px; background: #fff;
+}
+.admin-card textarea { min-height: 80px; resize: vertical; }
+.client-admin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+.client-preview { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0 10px; }
+.client-preview img { width: 76px; height: 58px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); }
+.admin-help { font-family: var(--font-ui); font-size: 12px; color: var(--muted); line-height: 1.55; }
+.status-chip { display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px; border-radius: 999px; background: #f1f5f9; color: #475569; font-family: var(--font-ui); font-size: 12px; font-weight: 700; }
+.status-chip.ok { background: #dcfce7; color: #166534; }
+.status-chip.warn { background: #fef3c7; color: #92400e; }
+
+/* ── View toggle ── */
+.view-toggle { display: flex; gap: 4px; }
+.view-btn { padding: 7px 12px; border: 1px solid var(--line); background: #fff; border-radius: 9px; font-family: var(--font-ui); font-size: 12px; font-weight: 700; cursor: pointer; color: var(--muted); transition: .15s; }
+.view-btn.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+
+/* ── Responsive ── */
+@media(max-width:1100px) {
+  .stat-grid { grid-template-columns: repeat(2, 1fr); }
+  .kanban-board { grid-template-columns: repeat(3, 1fr); }
+}
+@media(max-width:860px) {
+  .admin-shell { grid-template-columns: 1fr; }
+  .sidebar { position: relative; height: auto; flex-direction: row; flex-wrap: wrap; padding: 14px 16px; gap: 8px; }
+  .sidebar-brand, .sidebar-sub, .sidebar-section, .sidebar-spacer, .sidebar-bottom { display: none; }
+  .sidebar-link { width: auto; padding: 8px 12px; }
+  .main { padding: 18px 16px 60px; }
+  .kanban-board { grid-template-columns: repeat(2, 1fr); }
+  .client-admin-grid { grid-template-columns: 1fr; }
+}
+@media(max-width:560px) {
+  .stat-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .stat-number { font-size: 28px; }
+  .funnel-bar-row { grid-template-columns: 110px 1fr 32px; gap: 8px; }
+  .funnel-bar-label { font-size: 11px; }
+  .lead-stat-strip { grid-template-columns: 1fr; }
+  .kanban-board { grid-template-columns: 1fr; }
+}
 </style>
 </head>
 <body>
 <div class="admin-shell">
+
+  <!-- SIDEBAR -->
   <aside class="sidebar">
-    <div class="brand">
+    <div class="sidebar-brand">
       <img src="../assets/images/maple-leaf-motors-logo.png" alt="MLM">
       <strong>Owner Portal</strong>
     </div>
-    <p>Maple Leaf Motors command center.</p>
-    <a class="btn btn-outline-white btn-sm btn-full" href="../index.html" style="margin-bottom:10px;">← View Website</a>
-    <button id="exportAll" class="btn btn-sm btn-full" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);">Export Data</button>
-    <hr>
-    <a class="sidebar-link" href="#" data-goto="leads">Leads</a>
-    <a class="sidebar-link" href="#" data-goto="pipeline">Pipeline</a>
-    <a class="sidebar-link" href="#" data-goto="inventory">Add Vehicle</a>
-    <a class="sidebar-link" href="#" data-goto="clients">Our Clients</a>
-    <a class="sidebar-link" href="#" data-goto="settings">Import</a>
+    <p class="sidebar-sub">Maple Leaf Motors command center</p>
+
+    <span class="sidebar-section">Sales</span>
+    <button class="sidebar-link" data-goto="leads">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Finance Leads
+    </button>
+    <button class="sidebar-link" data-goto="pipeline">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="4" height="18"/><rect x="10" y="8" width="4" height="13"/><rect x="17" y="5" width="4" height="16"/></svg>
+      Pipeline
+    </button>
+
+    <span class="sidebar-section">Inventory</span>
+    <button class="sidebar-link" data-goto="inventory">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
+      Add Vehicle
+    </button>
+
+    <span class="sidebar-section">Content</span>
+    <button class="sidebar-link" data-goto="clients">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      Our Clients
+    </button>
+    <button class="sidebar-link" data-goto="settings">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      Import
+    </button>
+
+    <div class="sidebar-spacer"></div>
+    <div class="sidebar-bottom">
+      <a href="../index.html">← View Website</a>
+      <button id="exportAll">Export Data</button>
+    </div>
   </aside>
 
+  <!-- MAIN -->
   <main class="main">
-    <h1>Command Center</h1>
-    <p class="sub">Leads, pipeline, and inventory overview.</p>
+    <div class="main-header">
+      <h1>Command Center</h1>
+      <p id="adminTimestamp">Maple Leaf Motors · Owner dashboard</p>
+    </div>
 
-    <div class="grid-3" style="margin-bottom:28px;">
-      <div class="admin-stat-card">
-        <div class="admin-stat-number" id="totalLeads">0</div>
-        <div class="admin-stat-label">Total Leads</div>
+    <!-- TOP STAT CARDS -->
+    <div class="stat-grid">
+      <div class="stat-card" style="--stat-color:#3b82f6;">
+        <div class="stat-card-accent"></div>
+        <div class="stat-number" id="totalLeads">0</div>
+        <div class="stat-label">Total Leads</div>
+        <div class="stat-delta neutral" id="statNewToday">Loading...</div>
       </div>
-      <div class="admin-stat-card">
-        <div class="admin-stat-number" id="totalVehicles">0</div>
-        <div class="admin-stat-label">Vehicles in Inventory</div>
+      <div class="stat-card" style="--stat-color:#22c55e;">
+        <div class="stat-card-accent"></div>
+        <div class="stat-number" id="statApproved">0</div>
+        <div class="stat-label">Approved</div>
+        <div class="stat-delta up" id="statDelivered">0 delivered</div>
       </div>
-      <div class="admin-stat-card">
-        <div class="admin-stat-number" id="mediaCount">0</div>
-        <div class="admin-stat-label">Media Items</div>
+      <div class="stat-card" style="--stat-color:#c8102e;">
+        <div class="stat-card-accent"></div>
+        <div class="stat-number" id="totalVehicles">0</div>
+        <div class="stat-label">Vehicles in Inventory</div>
+        <div class="stat-delta neutral" id="statFeatured">0 featured</div>
+      </div>
+      <div class="stat-card" style="--stat-color:#f59e0b;">
+        <div class="stat-card-accent"></div>
+        <div class="stat-number" id="mediaCount">0</div>
+        <div class="stat-label">Media Items</div>
+        <div class="stat-delta neutral">Photos &amp; videos</div>
       </div>
     </div>
 
+    <!-- TABS -->
     <div class="tabs">
-      <button class="tab active" data-tab="leads">Leads</button>
+      <button class="tab active" data-tab="leads">Finance Leads</button>
       <button class="tab" data-tab="pipeline">Pipeline</button>
       <button class="tab" data-tab="inventory">Inventory</button>
       <button class="tab" data-tab="clients">Our Clients</button>
       <button class="tab" data-tab="settings">Import</button>
     </div>
 
+    <!-- ===== LEADS TAB ===== -->
     <section id="leads" class="admin-section active">
-      <h2 style="margin-bottom:16px;">Leads</h2>
-      <table class="table">
-        <thead><tr><th>Name</th><th>Phone</th><th>Type</th><th>Status</th></tr></thead>
-        <tbody id="leadRows"></tbody>
-      </table>
-    </section>
-
-    <section id="pipeline" class="admin-section">
-      <h2 style="margin-bottom:16px;">Pipeline</h2>
-      <div id="kanban" class="kanban"></div>
-    </section>
-
-    <section id="inventory" class="admin-section">
-      <h2 style="margin-bottom:16px;">Add Vehicle</h2>
-      <form id="vehicleForm" class="card grid-2" style="padding:24px;gap:14px;margin-bottom:28px;">
-        <input name="id" placeholder="ID (auto if blank)">
-        <input name="year" required placeholder="Year">
-        <input name="make" required placeholder="Make">
-        <input name="model" required placeholder="Model">
-        <input name="trim" placeholder="Trim">
-        <input name="price" required placeholder="Price">
-        <input name="mileage" required placeholder="Mileage">
-        <input name="bodyStyle" placeholder="Body style">
-        <div class="upload-box" style="grid-column:1/-1;">
-          <label style="display:block;margin-bottom:8px;">Upload Vehicle Photos</label>
-          <input id="vehicleImages" type="file" accept="image/*" multiple>
+      <div class="section-toolbar">
+        <div>
+          <h2>Finance Leads</h2>
+          <p>Leads from the Start Approval funnel. Update status, add notes, export CSV.</p>
         </div>
-        <input name="features" placeholder="Features (comma separated)" style="grid-column:1/-1;">
-        <textarea name="description" placeholder="Description" style="grid-column:1/-1;"></textarea>
-        <label style="display:flex;align-items:center;gap:8px;font-family:var(--font-ui);font-size:14px;">
-          <input name="featured" type="checkbox" style="width:auto;"> Featured
-        </label>
-        <label style="display:flex;align-items:center;gap:8px;font-family:var(--font-ui);font-size:14px;">
-          <input name="sold" type="checkbox" style="width:auto;"> Sold
-        </label>
-        <button class="btn" style="grid-column:1/-1;">Save Vehicle</button>
-      </form>
-      <h3 style="margin-bottom:14px;">Current Inventory</h3>
-      <table class="table">
-        <thead><tr><th>Vehicle</th><th>Price</th><th>Mileage</th><th>Featured</th><th>Action</th></tr></thead>
-        <tbody id="vehicleRows"></tbody>
-      </table>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+          <div class="view-toggle">
+            <button class="view-btn active" id="viewTable">Table</button>
+            <button class="view-btn" id="viewCards">Cards</button>
+          </div>
+          <button class="btn btn-sm btn-outline" id="refreshFinanceLeads" type="button">Refresh</button>
+          <button class="btn btn-sm" id="exportFinanceLeads" type="button">Export CSV</button>
+          <a class="btn btn-sm btn-outline" href="../financing.html#approval" target="_blank">Open Funnel</a>
+        </div>
+      </div>
+
+      <!-- Mini stat strip -->
+      <div class="lead-stat-strip">
+        <div class="lead-stat-card"><strong id="leadStatTotal">0</strong><span>Total leads</span></div>
+        <div class="lead-stat-card"><strong id="leadStatNew">0</strong><span>New leads</span></div>
+        <div class="lead-stat-card"><strong id="leadStatApproved">0</strong><span>Approved</span></div>
+      </div>
+
+      <!-- Pipeline funnel bar chart -->
+      <div class="pipeline-visual" id="pipelineFunnelViz">
+        <div class="pipeline-visual-title">Lead Flow by Status</div>
+        <div class="funnel-bars" id="funnelBarsContainer">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="lead-filters">
+        <input id="leadSearch" placeholder="Search name, phone, email, city…">
+        <select id="leadStatusFilter">
+          <option value="">All statuses</option>
+          <option>NEW LEAD</option>
+          <option>CONTACTED</option>
+          <option>APPLICATION SENT</option>
+          <option>DEALERTRACK SUBMITTED</option>
+          <option>APPROVED</option>
+          <option>NEEDS COSIGNER</option>
+          <option>VEHICLE SELECTED</option>
+          <option>DELIVERED</option>
+          <option>LOST</option>
+        </select>
+      </div>
+
+      <!-- Table view -->
+      <div id="leadsTableView">
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>Lead</th><th>Finance Details</th><th>Tracking</th><th>Status / Notes</th><th>Action</th></tr></thead>
+            <tbody id="financeLeadRows"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Card view (hidden by default) -->
+      <div id="leadsCardView" style="display:none;">
+        <div class="lead-flow-grid" id="leadCardGrid"></div>
+      </div>
     </section>
 
+    <!-- ===== PIPELINE TAB ===== -->
+    <section id="pipeline" class="admin-section">
+      <div class="section-toolbar">
+        <div>
+          <h2>Pipeline Board</h2>
+          <p>Visual overview of all leads by stage.</p>
+        </div>
+      </div>
 
+      <!-- Conversion strip -->
+      <div class="conversion-strip" id="conversionStrip">
+        <!-- Rendered by JS -->
+      </div>
+
+      <!-- Kanban board -->
+      <div class="kanban-board" id="kanban"></div>
+    </section>
+
+    <!-- ===== INVENTORY TAB ===== -->
+    <section id="inventory" class="admin-section">
+      <div class="section-toolbar"><h2>Add Vehicle</h2></div>
+      <div class="admin-card" style="margin-bottom:20px;">
+        <form id="vehicleForm" class="grid-2" style="gap:12px;">
+          <input name="id" placeholder="ID (auto if blank)">
+          <input name="year" required placeholder="Year">
+          <input name="make" required placeholder="Make">
+          <input name="model" required placeholder="Model">
+          <input name="trim" placeholder="Trim">
+          <input name="price" required placeholder="Price">
+          <input name="mileage" required placeholder="Mileage">
+          <input name="bodyStyle" placeholder="Body style">
+          <div class="upload-box" style="grid-column:1/-1;">
+            <label style="display:block;margin-bottom:6px;font-family:var(--font-ui);font-size:13px;font-weight:600;">Upload Vehicle Photos</label>
+            <input id="vehicleImages" type="file" accept="image/*" multiple>
+          </div>
+          <input name="features" placeholder="Features (comma separated)" style="grid-column:1/-1;">
+          <textarea name="description" placeholder="Description" style="grid-column:1/-1;"></textarea>
+          <label style="display:flex;align-items:center;gap:8px;font-family:var(--font-ui);font-size:14px;">
+            <input name="featured" type="checkbox" style="width:auto;"> Featured
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-family:var(--font-ui);font-size:14px;">
+            <input name="sold" type="checkbox" style="width:auto;"> Sold
+          </label>
+          <button class="btn" style="grid-column:1/-1;">Save Vehicle</button>
+        </form>
+      </div>
+      <h3 style="margin-bottom:12px;">Current Inventory</h3>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>Vehicle</th><th>Price</th><th>Mileage</th><th>Featured</th><th>Action</th></tr></thead>
+          <tbody id="vehicleRows"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ===== CLIENTS TAB ===== -->
     <section id="clients" class="admin-section">
-      <h2 style="margin-bottom:8px;">Our Clients Uploads</h2>
-      <p class="sub" style="margin-bottom:18px;">Upload delivery photos and customer reviews for the Our Clients page.</p>
+      <div class="section-toolbar">
+        <div>
+          <h2>Our Clients Uploads</h2>
+          <p>Delivery photos and customer reviews for the Our Clients page.</p>
+        </div>
+      </div>
 
-      <div class="card" style="padding:20px;margin-bottom:20px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+      <div class="admin-card" style="margin-bottom:16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;">
           <div>
-            <h3 style="margin-bottom:6px;">Website Upload Connection</h3>
+            <h3 style="margin-bottom:4px;">Website Upload Connection</h3>
             <p class="admin-help">Uploads are authorized by your real admin login session. No API token is stored in the website files.</p>
           </div>
-          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
             <span id="clientsApiStatus" class="status-chip warn">Offline/local mode</span>
-            <button class="btn btn-sm btn-outline" id="refreshClientsData" type="button">Refresh From Website API</button>
-            <a class="btn btn-sm btn-outline" href="../clients.html" target="_blank">View Our Clients Page</a>
+            <button class="btn btn-sm btn-outline" id="refreshClientsData" type="button">Refresh From API</button>
+            <a class="btn btn-sm btn-outline" href="../clients.html" target="_blank">View Clients Page</a>
           </div>
         </div>
       </div>
 
       <div class="client-admin-grid">
-        <form id="adminDeliveryForm" class="client-admin-card">
+        <form id="adminDeliveryForm" class="admin-card">
           <h3>Add Delivery Photo</h3>
-          <p>Use real delivery/handoff photos. You can upload multiple photos for one client delivery.</p>
+          <p class="sub">Upload real delivery photos. You can upload multiple for one delivery.</p>
           <input name="clientName" placeholder="Client name, e.g. Amandeep S.">
           <input name="vehicle" placeholder="Vehicle, e.g. 2021 Honda Civic">
           <textarea name="quote" placeholder="Optional customer quote"></textarea>
@@ -162,9 +535,9 @@
           <button class="btn btn-full" type="submit">Upload Delivery</button>
         </form>
 
-        <form id="adminTestimonialForm" class="client-admin-card">
+        <form id="adminTestimonialForm" class="admin-card">
           <h3>Add Customer Review</h3>
-          <p>Add written reviews/testimonials. These appear under Client Reviews.</p>
+          <p class="sub">Add written reviews. These appear under Client Reviews on the website.</p>
           <input name="name" placeholder="Client name, e.g. Melissa R." required>
           <select name="rating">
             <option value="5">★★★★★ — 5 stars</option>
@@ -176,53 +549,49 @@
         </form>
       </div>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:22px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
         <div>
-          <h3 style="margin-bottom:14px;">Delivery Photos</h3>
-          <table class="table">
-            <thead><tr><th>Client</th><th>Vehicle</th><th>Photos</th><th>Action</th></tr></thead>
-            <tbody id="deliveryRows"></tbody>
-          </table>
+          <h3 style="margin-bottom:12px;">Delivery Photos</h3>
+          <div class="table-wrap">
+            <table class="table">
+              <thead><tr><th>Client</th><th>Vehicle</th><th>Photos</th><th>Action</th></tr></thead>
+              <tbody id="deliveryRows"></tbody>
+            </table>
+          </div>
         </div>
         <div>
-          <h3 style="margin-bottom:14px;">Reviews</h3>
-          <table class="table">
-            <thead><tr><th>Name</th><th>Rating</th><th>Review</th><th>Action</th></tr></thead>
-            <tbody id="testimonialRows"></tbody>
-          </table>
+          <h3 style="margin-bottom:12px;">Reviews</h3>
+          <div class="table-wrap">
+            <table class="table">
+              <thead><tr><th>Name</th><th>Rating</th><th>Review</th><th>Action</th></tr></thead>
+              <tbody id="testimonialRows"></tbody>
+            </table>
+          </div>
         </div>
       </div>
     </section>
 
-
-    <section id="leads" class="admin-section">
-      <div class="lead-toolbar"><div><h2 style="margin-bottom:6px;">Finance Leads</h2><p class="sub" style="margin-bottom:0;">Leads from the Get Approved funnel. Update status, add notes, and export CSV.</p></div><div style="display:flex;gap:10px;flex-wrap:wrap;"><button class="btn btn-sm btn-outline" id="refreshFinanceLeads" type="button">Refresh Leads</button><button class="btn btn-sm" id="exportFinanceLeads" type="button">Export CSV</button><a class="btn btn-sm btn-outline" href="../get-approved.html" target="_blank">Open Funnel</a></div></div>
-      <div class="lead-card-grid"><div class="lead-stat-card"><strong id="leadStatTotal">0</strong><span>Total leads</span></div><div class="lead-stat-card"><strong id="leadStatNew">0</strong><span>New leads</span></div><div class="lead-stat-card"><strong id="leadStatApproved">0</strong><span>Approved</span></div></div>
-      <div class="lead-filters" style="margin-bottom:14px;display:flex;gap:8px;flex-wrap:wrap;"><input id="leadSearch" placeholder="Search name, phone, email, city..." style="max-width:360px;"><select id="leadStatusFilter" style="max-width:220px;"><option value="">All statuses</option><option>NEW LEAD</option><option>CONTACTED</option><option>APPLICATION SENT</option><option>DEALERTRACK SUBMITTED</option><option>APPROVED</option><option>NEEDS COSIGNER</option><option>VEHICLE SELECTED</option><option>DELIVERED</option><option>LOST</option></select></div>
-      <table class="table"><thead><tr><th>Lead</th><th>Finance Details</th><th>Tracking</th><th>Status / Notes</th><th>Action</th></tr></thead><tbody id="financeLeadRows"></tbody></table>
-    </section>
-
+    <!-- ===== SETTINGS/IMPORT TAB ===== -->
     <section id="settings" class="admin-section">
-
-      <div class="card" style="padding:24px;margin-bottom:20px;">
-        <h3 style="margin-bottom:8px;">Admin Login Password</h3>
-        <p class="admin-help">Change the real admin password used by <code>/admin/</code>. This is saved in Cloudflare KV and works across browsers/devices.</p>
-        <form id="adminPasswordForm" style="margin-top:16px;display:grid;gap:12px;max-width:560px;">
+      <div class="admin-card">
+        <h3>Admin Login Password</h3>
+        <p class="sub">Change the real admin password used by /admin/. Saved in Cloudflare KV — works across browsers and devices.</p>
+        <form id="adminPasswordForm" style="margin-top:14px;display:grid;gap:10px;max-width:520px;">
           <input id="currentAdminPassword" type="password" placeholder="Current admin password" required>
-          <input id="newAdminPassword" type="password" placeholder="New admin password, minimum 12 characters" required>
+          <input id="newAdminPassword" type="password" placeholder="New admin password (min 12 characters)" required>
           <input id="confirmAdminPassword" type="password" placeholder="Confirm new admin password" required>
           <div style="display:flex;gap:10px;flex-wrap:wrap;">
             <button class="btn" type="submit">Change Admin Password</button>
           </div>
         </form>
-        <p class="admin-help" style="margin-top:12px;">After changing the password, use the new password the next time you log in.</p>
+        <p class="admin-help" style="margin-top:10px;">After changing, use the new password on next login.</p>
       </div>
 
-      <h2 style="margin-bottom:16px;">Listing Studio Import</h2>
-      <div class="card" style="padding:24px;">
-        <p style="font-family:var(--font-ui);margin-bottom:16px;">Import JSON generated by Maple Leaf Listing Studio or the Edge extension.</p>
+      <div class="admin-card">
+        <h3>Listing Studio Import</h3>
+        <p class="sub">Import JSON generated by Maple Leaf Listing Studio or the Edge extension.</p>
         <input id="importData" type="file" accept=".json">
-        <p class="muted" style="font-size:13px;font-family:var(--font-ui);margin-top:12px;">Supports single vehicle JSON, inventory array, or full site export.</p>
+        <p class="admin-help" style="margin-top:10px;">Supports single vehicle JSON, inventory array, or full site export.</p>
       </div>
     </section>
   </main>
@@ -230,13 +599,291 @@
 
 <script src="../assets/js/admin.js"></script>
 <script>
-// Sidebar nav links
-document.querySelectorAll('[data-goto]').forEach(link => {
+// ── Sidebar nav ──
+document.querySelectorAll('.sidebar-link[data-goto]').forEach(link => {
   link.addEventListener('click', e => {
-    e.preventDefault();
     const target = link.dataset.goto;
     document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === target));
     document.querySelectorAll('.admin-section').forEach(s => s.classList.toggle('active', s.id === target));
+    document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+    link.classList.add('active');
+  });
+});
+
+// ── View toggle (table / cards) ──
+const viewTable = document.getElementById('viewTable');
+const viewCards = document.getElementById('viewCards');
+const leadsTableView = document.getElementById('leadsTableView');
+const leadsCardView = document.getElementById('leadsCardView');
+
+viewTable && viewTable.addEventListener('click', () => {
+  viewTable.classList.add('active'); viewCards.classList.remove('active');
+  leadsTableView.style.display = ''; leadsCardView.style.display = 'none';
+});
+viewCards && viewCards.addEventListener('click', () => {
+  viewCards.classList.add('active'); viewTable.classList.remove('active');
+  leadsCardView.style.display = ''; leadsTableView.style.display = 'none';
+  renderLeadCards();
+});
+
+// ── Timestamp ──
+const ts = document.getElementById('adminTimestamp');
+if (ts) ts.textContent = 'Maple Leaf Motors · ' + new Date().toLocaleDateString('en-CA', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+
+// ── Lead age badge ──
+function leadAgeBadge(createdAt) {
+  if (!createdAt) return '';
+  const ageMs = Date.now() - new Date(createdAt).getTime();
+  const ageHours = ageMs / (1000 * 60 * 60);
+  if (ageHours > 48) {
+    return `<span class="age-badge age-badge-red" title="Needs follow-up">⚑ ${Math.floor(ageHours / 24)}d old</span>`;
+  } else if (ageHours > 24) {
+    return `<span class="age-badge age-badge-amber" title="Follow up soon">${Math.floor(ageHours)}h old</span>`;
+  }
+  return '';
+}
+
+// ── Lead age CSS (injected once) ──
+(function injectAgeStyles() {
+  const style = document.createElement('style');
+  style.textContent = `
+    .age-badge { display:inline-flex; align-items:center; gap:3px; padding:3px 7px; border-radius:999px; font-family:var(--font-ui); font-size:10px; font-weight:800; white-space:nowrap; }
+    .age-badge-amber { background:#fef3c7; color:#92400e; border:1px solid #fde68a; }
+    .age-badge-red   { background:#fee2e2; color:#991b1b; border:1px solid #fecaca; }
+    .lead-row-stale  { background:#fff7ed !important; }
+    .lead-row-urgent { background:#fff1f2 !important; }
+    tr.lead-row-urgent td:first-child { border-left:3px solid #ef4444; }
+    tr.lead-row-stale td:first-child  { border-left:3px solid #f59e0b; }
+  `;
+  document.head.appendChild(style);
+})();
+const STATUS_COLORS = {
+  'NEW LEAD':               '#3b82f6',
+  'CONTACTED':              '#8b5cf6',
+  'APPLICATION SENT':       '#f59e0b',
+  'DEALERTRACK SUBMITTED':  '#f97316',
+  'APPROVED':               '#22c55e',
+  'NEEDS COSIGNER':         '#ec4899',
+  'VEHICLE SELECTED':       '#06b6d4',
+  'DELIVERED':              '#10b981',
+  'LOST':                   '#d1d5db',
+};
+
+const STATUS_CSS_CLASS = {
+  'NEW LEAD':               'status-NEW-LEAD',
+  'CONTACTED':              'status-CONTACTED',
+  'APPLICATION SENT':       'status-APPLICATION-SENT',
+  'DEALERTRACK SUBMITTED':  'status-DEALERTRACK-SUBMITTED',
+  'APPROVED':               'status-APPROVED',
+  'NEEDS COSIGNER':         'status-NEEDS-COSIGNER',
+  'VEHICLE SELECTED':       'status-VEHICLE-SELECTED',
+  'DELIVERED':              'status-DELIVERED',
+  'LOST':                   'status-LOST',
+};
+
+const BAR_CLASSES = {
+  'NEW LEAD': 'bar-new', 'CONTACTED': 'bar-contacted',
+  'APPLICATION SENT': 'bar-appsent', 'DEALERTRACK SUBMITTED': 'bar-dealer',
+  'APPROVED': 'bar-approved', 'NEEDS COSIGNER': 'bar-cosigner',
+  'VEHICLE SELECTED': 'bar-vehicle', 'DELIVERED': 'bar-delivered',
+  'LOST': 'bar-lost',
+};
+
+// ── Render the funnel bar chart ──
+function renderFunnelBars(leads) {
+  const container = document.getElementById('funnelBarsContainer');
+  if (!container) return;
+  const STATUSES_ORDER = ['NEW LEAD','CONTACTED','APPLICATION SENT','DEALERTRACK SUBMITTED','APPROVED','NEEDS COSIGNER','VEHICLE SELECTED','DELIVERED','LOST'];
+  const counts = {};
+  STATUSES_ORDER.forEach(s => counts[s] = 0);
+  leads.forEach(l => { if (counts[l.status] !== undefined) counts[l.status]++; });
+  const max = Math.max(1, ...Object.values(counts));
+
+  container.innerHTML = STATUSES_ORDER.map(s => {
+    const count = counts[s];
+    const pct = Math.round((count / max) * 100);
+    const barClass = BAR_CLASSES[s] || 'bar-lost';
+    return `<div class="funnel-bar-row">
+      <div class="funnel-bar-label" title="${s}">${s}</div>
+      <div class="funnel-bar-track">
+        <div class="funnel-bar-fill ${barClass}" style="width:${pct}%"></div>
+      </div>
+      <div class="funnel-bar-count">${count}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── Render the conversion strip at top of pipeline tab ──
+function renderConversionStrip(leads) {
+  const strip = document.getElementById('conversionStrip');
+  if (!strip) return;
+  const stages = [
+    { label: 'Total', key: null },
+    { label: 'Contacted', key: 'CONTACTED' },
+    { label: 'Approved', key: 'APPROVED' },
+    { label: 'Delivered', key: 'DELIVERED' },
+  ];
+  strip.innerHTML = stages.map(s => {
+    const count = s.key === null ? leads.length : leads.filter(l => l.status === s.key).length;
+    const pct = leads.length > 0 && s.key !== null ? Math.round((count / leads.length) * 100) + '%' : '';
+    const color = s.key ? (STATUS_COLORS[s.key] || '#6b7280') : '#0c111d';
+    return `<div class="conv-stage">
+      <div class="conv-stage-num" style="color:${color}">${count}</div>
+      <div class="conv-stage-label">${s.label}${pct ? '<br><span style="color:#9ca3af;font-size:9px;">'+pct+' of total</span>' : ''}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── Render kanban board (pipeline tab) ──
+function renderKanbanBoard(leads) {
+  const board = document.getElementById('kanban');
+  if (!board) return;
+  const STATUSES_BOARD = ['NEW LEAD','CONTACTED','APPLICATION SENT','DEALERTRACK SUBMITTED','APPROVED','NEEDS COSIGNER','VEHICLE SELECTED','DELIVERED','LOST'];
+  board.innerHTML = STATUSES_BOARD.map(s => {
+    const items = leads.filter(l => l.status === s);
+    const color = STATUS_COLORS[s] || '#6b7280';
+    return `<div class="kanban-lane">
+      <div class="lane-header">
+        <span style="color:${color}">${s}</span>
+        <span class="lane-count">${items.length}</span>
+      </div>
+      ${items.map(l => `<div class="lead-mini">
+        <b>${escHtml(l.firstName || '')} ${escHtml(l.lastName || '')}</b>
+        <span>${escHtml(l.phone || '')}</span>
+        ${leadAgeBadge(l.createdAt)}
+      </div>`).join('') || '<div style="font-family:var(--font-ui);font-size:12px;color:#9ca3af;padding:8px 0;">Empty</div>'}
+    </div>`;
+  }).join('');
+}
+
+// ── Render card view ──
+function renderLeadCards() {
+  const grid = document.getElementById('leadCardGrid');
+  if (!grid || typeof FINANCE_LEADS === 'undefined') return;
+  const leads = filteredFinanceLeads ? filteredFinanceLeads() : FINANCE_LEADS;
+  if (!leads.length) { grid.innerHTML = '<p style="font-family:var(--font-ui);color:var(--muted);font-size:14px;">No leads match the current filter.</p>'; return; }
+  grid.innerHTML = leads.map(l => {
+    const color = STATUS_COLORS[l.status] || '#6b7280';
+    const cssClass = STATUS_CSS_CLASS[l.status] || '';
+    return `<div class="lead-flow-card">
+      <div class="lead-flow-card-top" style="background:${color}"></div>
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
+        <div class="lead-flow-card-name">${escHtml(l.firstName||'')} ${escHtml(l.lastName||'')}</div>
+        <span class="status-badge ${cssClass}">${escHtml(l.status||'')}</span>
+      </div>
+      <div class="lead-flow-card-meta">
+        <a href="tel:${escHtml(l.phone||'')}" style="color:var(--brand);">${escHtml(l.phone||'')}</a><br>
+        ${escHtml(l.city||'')}${l.province?', '+escHtml(l.province):''}
+      </div>
+      <div class="lead-flow-card-details">
+        ${l.vehicleType ? `<span class="lead-detail-pill">${escHtml(l.vehicleType)}</span>` : ''}
+        ${l.creditSituation ? `<span class="lead-detail-pill">${escHtml(l.creditSituation)}</span>` : ''}
+        ${l.budget ? `<span class="lead-detail-pill">${escHtml(l.budget)}</span>` : ''}
+      </div>
+      <div class="lead-flow-card-footer">
+        <small style="font-family:var(--font-ui);font-size:11px;color:var(--muted);">${escHtml((l.createdAt||'').replace('T',' ').slice(0,16))}</small>
+        <div style="display:flex;gap:6px;align-items:center;">${leadAgeBadge(l.createdAt)}<span class="badge-source">${escHtml(l.source||'website')}</span></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Hook into admin.js after leads load to render visuals ──
+// We wrap renderFinanceLeads so our visuals update every time admin.js
+// redraws the table (initial load, refresh, save, delete).
+function afterLeadsRender() {
+  if (typeof FINANCE_LEADS === 'undefined') return;
+  renderFunnelBars(FINANCE_LEADS);
+  renderConversionStrip(FINANCE_LEADS);
+  renderKanbanBoard(FINANCE_LEADS);
+
+  // Sync top stat cards (totalLeads already set by admin.js)
+  const approved = FINANCE_LEADS.filter(l => l.status === 'APPROVED').length;
+  const delivered = FINANCE_LEADS.filter(l => l.status === 'DELIVERED').length;
+  const newToday = FINANCE_LEADS.filter(l => {
+    if (!l.createdAt) return false;
+    return l.createdAt.slice(0, 10) === new Date().toISOString().slice(0, 10);
+  }).length;
+
+  const elApproved  = document.getElementById('statApproved');
+  const elDelivered = document.getElementById('statDelivered');
+  const elNewToday  = document.getElementById('statNewToday');
+  if (elApproved)  elApproved.textContent  = approved;
+  if (elDelivered) elDelivered.textContent  = delivered + ' delivered';
+  if (elNewToday)  elNewToday.textContent   = newToday + ' added today';
+
+  // Patch table rows with age classes (admin.js renders the table, we style it)
+  // We match rows by reading the date cell rendered by admin.js
+  requestAnimationFrame(() => {
+    const tbody = document.getElementById('financeLeadRows');
+    if (!tbody) return;
+    FINANCE_LEADS.forEach(l => {
+      if (!l.createdAt || !l.id) return;
+      const ageMs = Date.now() - new Date(l.createdAt).getTime();
+      const ageHours = ageMs / (1000 * 60 * 60);
+      // Find the row by looking for the lead ID in the save-lead button
+      const btn = tbody.querySelector(`[data-save-lead="${CSS.escape(l.id)}"]`);
+      if (!btn) return;
+      const row = btn.closest('tr');
+      if (!row) return;
+      row.classList.remove('lead-row-stale', 'lead-row-urgent');
+      if (ageHours > 48 && l.status === 'NEW LEAD') {
+        row.classList.add('lead-row-urgent');
+        // Inject age badge into the tracking cell (3rd td)
+        const trackingCell = row.querySelectorAll('td')[2];
+        if (trackingCell && !trackingCell.querySelector('.age-badge')) {
+          trackingCell.insertAdjacentHTML('afterbegin', leadAgeBadge(l.createdAt) + '<br>');
+        }
+      } else if (ageHours > 24 && l.status === 'NEW LEAD') {
+        row.classList.add('lead-row-stale');
+        const trackingCell = row.querySelectorAll('td')[2];
+        if (trackingCell && !trackingCell.querySelector('.age-badge')) {
+          trackingCell.insertAdjacentHTML('afterbegin', leadAgeBadge(l.createdAt) + '<br>');
+        }
+      }
+    });
+  });
+}
+
+// Wait for admin.js to define renderFinanceLeads, then wrap it
+let wrapAttempts = 0;
+const wrapPoll = setInterval(() => {
+  wrapAttempts++;
+  if (typeof renderFinanceLeads === 'function') {
+    clearInterval(wrapPoll);
+    const _orig = renderFinanceLeads;
+    // Override the global so every call (refresh, save, delete) also runs our visuals
+    window.renderFinanceLeads = function() {
+      _orig();
+      afterLeadsRender();
+    };
+    // Trigger initial render if leads are already loaded
+    if (Array.isArray(FINANCE_LEADS) && FINANCE_LEADS.length >= 0) afterLeadsRender();
+  }
+  if (wrapAttempts > 60) clearInterval(wrapPoll); // give up after 15s
+}, 250);
+
+// Also re-render when the pipeline tab is clicked
+document.querySelectorAll('.tab').forEach(t => {
+  t.addEventListener('click', () => {
+    if (t.dataset.tab === 'pipeline' && typeof FINANCE_LEADS !== 'undefined') {
+      renderConversionStrip(FINANCE_LEADS);
+      renderKanbanBoard(FINANCE_LEADS);
+    }
+  });
+});
+
+// Re-render bars on filter change
+['leadSearch','leadStatusFilter'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('input', () => {
+    if (typeof renderLeadCards !== 'undefined' && leadsCardView && leadsCardView.style.display !== 'none') {
+      renderLeadCards();
+    }
   });
 });
 </script>

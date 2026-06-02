@@ -6,6 +6,10 @@
 // - API_TOKEN: secret text variable for Listing Studio / inventory uploads
 // - ADMIN_PASSWORD: secret text variable for initial admin login
 // - ADMIN_SESSION_SECRET: secret text variable used to sign admin sessions
+// Optional email notification secrets:
+// - RESEND_API_KEY: Resend API key
+// - LEAD_NOTIFY_EMAIL: email address that receives new lead alerts
+// - LEAD_FROM_EMAIL: verified sender, e.g. Maple Leaf Motors <leads@yourdomain.com>
 //
 // Public:
 // GET /inventory
