@@ -50,8 +50,6 @@ export default {
       // ─────────────────────────────────────────────
       if (url.pathname === "/inventory" && request.method === "GET") {
         const inventory = await getInventory(env);
-        // Public inventory hides ONLY vehicles archived with the new archiveHidden flag.
-        // This restores older inventory that may have legacy sold/status/archived fields.
         const publicInventory = inventory.filter(v => v.archiveHidden !== true);
         return json(publicInventory);
       }
