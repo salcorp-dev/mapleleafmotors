@@ -386,6 +386,33 @@
   .payment-calc-grid,.payment-result-strip{grid-template-columns:1fr}
 }
 
+
+/* ── v10.11 Auto Payment Calculator Fix ── */
+.payment-calc-panel{
+  grid-column:1/-1;
+  border:1px solid var(--line,#e5e7eb);
+  border-radius:18px;
+  background:#f8fafc;
+  padding:18px;
+  margin-top:6px;
+}
+.payment-calc-panel h4{margin:0 0 6px;font-size:15px;color:var(--ink,#111827)}
+.payment-calc-panel p{margin:0 0 14px;font-family:var(--font-ui);font-size:12px;color:var(--muted,#64748b)}
+.payment-calc-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.payment-field label,.payment-result label{
+  display:block;margin:0 0 6px;font-family:var(--font-ui,system-ui);font-size:10px;font-weight:900;letter-spacing:.10em;text-transform:uppercase;color:#7b8190;
+}
+.payment-field input,.payment-field select{
+  width:100%;min-height:42px;border:1px solid #d9dee8;border-radius:10px;background:#fff;padding:10px 12px;font-family:var(--font-ui,system-ui);font-size:14px;font-weight:700;color:#111827;
+}
+.payment-result-strip{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:12px}
+.payment-result{background:#fff;border:1px solid #d9dee8;border-radius:12px;padding:13px 14px}
+.payment-result strong{display:block;font-family:var(--font-display,system-ui);font-size:25px;font-weight:950;color:#0b1020;line-height:1.05}
+.payment-result.biweekly-final{border-color:rgba(193,18,31,.32);box-shadow:0 8px 24px rgba(193,18,31,.09)}
+.payment-result.biweekly-final strong{color:#991b1b}
+.payment-note-input{grid-column:1/-1}
+@media(max-width:860px){.payment-calc-grid,.payment-result-strip{grid-template-columns:1fr}}
+
 </style>
 </head>
 <body>
@@ -634,7 +661,7 @@
 
               <div class="payment-calc-panel">
                 <h4>Payment Calculator</h4>
-                <p>Updates automatically as you change price, term, APR, or down payment. Uses 12% Manitoba tax and standard amortization. Biweekly = monthly × 12 ÷ 26.</p>
+                <p>Updates live as you change vehicle price, term, APR, or down payment. Uses 12% Manitoba tax and standard amortization. Biweekly = monthly × 12 ÷ 26.</p>
 
                 <div class="payment-calc-grid">
                   <div class="payment-field">
@@ -894,284 +921,413 @@
   </main>
 </div>
 
-<script src="../assets/js/admin.js?v=10.10"></script>
+<script src="../assets/js/admin.js?v=10.11"></script>
 
 <script>
-/* v10.10 Direct Live Inventory Save Binder + Auto Payment Calculator
-   This runs directly inside dashboard.html, after admin.js, and binds the modal Save button.
-*/
+/* v10.11 Direct Live Inventory Save Binder + Working Auto Payment Calculator */
 (function(){
-  let MLM_LIVE_INV = [];
+  "use strict";
+
+  let LIVE_INV = [];
+  let saveInProgress = false;
+
+  const APR_OPTIONS = ["", "2.9", "4.9", "5.9", "6.9", "7", "8.9", "9.9", "10.9", "12.9", "14.9"];
+  const TERM_OPTIONS = ["", "36", "48", "60", "72", "84", "96"];
 
   function qs(s, p=document){ return p.querySelector(s); }
   function qsa(s, p=document){ return Array.from(p.querySelectorAll(s)); }
-  function esc(v){ return String(v || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-
-  function token(){
-    return sessionStorage.getItem('mlm_admin_session') || '';
-  }
+  function esc(v){ return String(v ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c])); }
+  function parseMoney(v){ return Number(String(v ?? "").replace(/[^0-9.]/g, "")) || 0; }
+  function money(v){ return "$" + Math.round(Number(v || 0)).toLocaleString(); }
+  function token(){ return sessionStorage.getItem("mlm_admin_session") || ""; }
 
   async function adminBase(){
     try {
-      const r = await fetch('../assets/data/config.json?directSave=105', {cache:'no-store'});
+      const r = await fetch("../assets/data/config.json?fresh=1011", { cache:"no-store" });
       if (r.ok) {
         const c = await r.json();
-        if (c.adminApiUrl) return c.adminApiUrl.replace(/\/$/, '');
+        if (c.adminApiUrl) return c.adminApiUrl.replace(/\/$/, "");
       }
     } catch(e) {}
-    return 'https://maple-leaf-inventory.sal96wpg.workers.dev/admin';
+    return "https://maple-leaf-inventory.sal96wpg.workers.dev/admin";
   }
 
   async function api(path, opts={}){
     const base = await adminBase();
-    const headers = Object.assign({}, opts.headers || {}, { Authorization: 'Bearer ' + token() });
-    if (opts.json) {
-      headers['Content-Type'] = 'application/json';
-      opts.body = JSON.stringify(opts.json);
-      delete opts.json;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 20000);
+
+    try {
+      const headers = Object.assign({}, opts.headers || {}, { Authorization: "Bearer " + token() });
+      if (opts.json) {
+        headers["Content-Type"] = "application/json";
+        opts.body = JSON.stringify(opts.json);
+        delete opts.json;
+      }
+
+      const res = await fetch(base + path, Object.assign({}, opts, { headers, signal: controller.signal }));
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok || data.error) throw new Error(data.error || "HTTP " + res.status);
+      return data;
+    } catch(e) {
+      if (e.name === "AbortError") throw new Error("Request timed out. Check the Worker deployment and internet connection.");
+      throw e;
+    } finally {
+      clearTimeout(timeout);
     }
-    const res = await fetch(base + path, Object.assign({}, opts, {headers}));
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok || data.error) throw new Error(data.error || ('HTTP ' + res.status));
-    return data;
   }
 
   function setStatus(ok, msg){
-    const el = qs('#liveInventoryStatus');
+    const el = qs("#liveInventoryStatus");
     if (!el) return;
     el.textContent = msg;
-    el.classList.toggle('warn', !ok);
+    el.classList.toggle("warn", !ok);
   }
 
   function title(v){
-    return v.title || [v.year, v.make, v.model, v.trim].filter(Boolean).join(' ') || 'Untitled vehicle';
+    return v.title || [v.year, v.make, v.model, v.trim].filter(Boolean).join(" ") || "Untitled vehicle";
   }
 
   function img(v){
-    return Array.isArray(v.images) && v.images.length ? v.images[0] : (v.image || '');
+    return Array.isArray(v.images) && v.images.length ? v.images[0] : (v.image || "");
   }
 
   function km(v){
     return Number(v.mileage || v.kilometers || 0);
   }
 
+  function normalizeSelect(form){
+    if (form.elements.financeRate && !APR_OPTIONS.includes(String(form.elements.financeRate.value))) form.elements.financeRate.value = "7";
+    if (form.elements.financeTermMonths && !TERM_OPTIONS.includes(String(form.elements.financeTermMonths.value))) form.elements.financeTermMonths.value = "84";
+    if (form.elements.taxRate) form.elements.taxRate.value = "12";
+  }
+
+  function calculatePayments(){
+    const form = qs("#vehicleEditForm");
+    if (!form) return null;
+
+    normalizeSelect(form);
+
+    const calcPriceInput = qs("#calcVehiclePrice");
+    const mainPriceInput = form.elements.price;
+
+    const price = parseMoney(calcPriceInput?.value || mainPriceInput?.value || 0);
+    const apr = Number(form.elements.financeRate?.value || 7);
+    const rate = apr / 100;
+    const months = Number(form.elements.financeTermMonths?.value || 84);
+    const down = parseMoney(form.elements.downPayment?.value || 0);
+
+    const financedWithTax = Math.max(0, (price * 1.12) - down);
+    const monthlyRate = rate / 12;
+    let monthly = 0;
+
+    if (months > 0) {
+      if (monthlyRate > 0) {
+        monthly = financedWithTax * (monthlyRate * Math.pow(1 + monthlyRate, months)) / (Math.pow(1 + monthlyRate, months) - 1);
+      } else {
+        monthly = financedWithTax / months;
+      }
+    }
+
+    const biweekly = monthly * 12 / 26;
+    const weekly = monthly * 12 / 52;
+
+    if (form.elements.monthlyPayment) form.elements.monthlyPayment.value = Math.round(monthly);
+    if (form.elements.biweeklyPayment) form.elements.biweeklyPayment.value = Math.round(biweekly);
+    if (form.elements.weeklyPayment) form.elements.weeklyPayment.value = Math.round(weekly);
+    if (form.elements.paymentNote) {
+      form.elements.paymentNote.value = `Final payment: ${money(monthly)} monthly / ${money(biweekly)} biweekly, ${months} months, ${apr}% APR, 12% MB tax, ${money(down)} down`;
+    }
+
+    const financedEl = qs("#paymentFinancePreview");
+    const monthlyEl = qs("#paymentMonthlyPreview");
+    const biweeklyEl = qs("#paymentBiweeklyPreview");
+    if (financedEl) financedEl.textContent = money(financedWithTax);
+    if (monthlyEl) monthlyEl.textContent = money(monthly);
+    if (biweeklyEl) biweeklyEl.textContent = money(biweekly);
+
+    return {
+      price,
+      financedWithTax: Math.round(financedWithTax),
+      monthlyPayment: Math.round(monthly),
+      biweeklyPayment: Math.round(biweekly),
+      weeklyPayment: Math.round(weekly),
+      financeRate: apr,
+      financeTermMonths: months,
+      taxRate: 12,
+      downPayment: down
+    };
+  }
+
   function filtered(){
-    const q = (qs('#liveInventorySearch')?.value || '').toLowerCase().trim();
-    const f = qs('#liveInventoryFilter')?.value || '';
-    return MLM_LIVE_INV.filter(v => {
-      const t = [v.title,v.year,v.make,v.model,v.trim,v.vin,v.stockNumber,v.bodyStyle,v.drivetrain,v.transmission].join(' ').toLowerCase();
-      const sold = !!v.sold || String(v.status || '').toLowerCase() === 'sold';
-      if (q && !t.includes(q)) return false;
-      if (f === 'available' && sold) return false;
-      if (f === 'sold' && !sold) return false;
-      if (f === 'featured' && !v.featured) return false;
+    const q = (qs("#liveInventorySearch")?.value || "").toLowerCase().trim();
+    const f = qs("#liveInventoryFilter")?.value || "";
+    return LIVE_INV.filter(v => {
+      const text = [v.title, v.year, v.make, v.model, v.trim, v.vin, v.stockNumber, v.bodyStyle, v.drivetrain, v.transmission].join(" ").toLowerCase();
+      const sold = !!v.sold || String(v.status || "").toLowerCase() === "sold";
+      if (q && !text.includes(q)) return false;
+      if (f === "available" && sold) return false;
+      if (f === "sold" && !sold) return false;
+      if (f === "featured" && !v.featured) return false;
       return true;
     });
   }
 
   function render(){
-    const tbody = qs('#liveInventoryRows');
+    const tbody = qs("#liveInventoryRows");
     if (!tbody) return;
+
     const rows = filtered();
     tbody.innerHTML = rows.map(v => {
-      const sold = !!v.sold || String(v.status || '').toLowerCase() === 'sold';
+      const sold = !!v.sold || String(v.status || "").toLowerCase() === "sold";
       const image = img(v);
+      const biweekly = Number(v.biweeklyPayment || 0);
       return `<tr>
         <td>${image ? `<img class="inventory-thumb" src="${esc(image)}" alt="">` : `<div class="inventory-thumb"></div>`}</td>
-        <td><strong>${esc(title(v))}</strong><br><small>${esc(v.vin || '')}</small></td>
-        <td>${km(v).toLocaleString()} km<br><small>${esc([v.bodyStyle,v.drivetrain,v.transmission].filter(Boolean).join(' · '))}</small></td>
-        <td><strong>$${Number(v.price || 0).toLocaleString()}</strong></td>
-        <td>${sold ? '<span class="status-chip warn">Sold</span>' : '<span class="status-chip ok">Available</span>'}${v.featured ? '<br><span class="status-chip">Featured</span>' : ''}</td>
+        <td><strong>${esc(title(v))}</strong><br><small>${esc(v.vin || "")}</small></td>
+        <td>${km(v).toLocaleString()} km<br><small>${esc([v.bodyStyle, v.drivetrain, v.transmission].filter(Boolean).join(" · "))}</small>${biweekly ? `<br><strong>Biweekly: ${money(biweekly)}</strong>` : ""}</td>
+        <td><strong>${money(v.price || 0)}</strong></td>
+        <td>${sold ? '<span class="status-chip warn">Sold</span>' : '<span class="status-chip ok">Available</span>'}${v.featured ? '<br><span class="status-chip">Featured</span>' : ""}</td>
         <td>
-          <button class="btn small light" type="button" data-v105-edit="${esc(v.id)}">Edit</button>
-          <button class="btn small light" type="button" data-v105-sold="${esc(v.id)}">${sold ? 'Mark Available' : 'Mark Sold'}</button>
-          <button class="btn small light" type="button" data-v105-delete="${esc(v.id)}">Delete</button>
+          <button class="btn small light" type="button" data-v1011-edit="${esc(v.id)}">Edit</button>
+          <button class="btn small light" type="button" data-v1011-sold="${esc(v.id)}">${sold ? "Mark Available" : "Mark Sold"}</button>
+          <button class="btn small light" type="button" data-v1011-delete="${esc(v.id)}">Delete</button>
         </td>
       </tr>`;
-    }).join('') || '<tr><td colspan="6">No live vehicles found.</td></tr>';
+    }).join("") || '<tr><td colspan="6">No live vehicles found.</td></tr>';
 
-    qsa('[data-v105-edit]').forEach(b => b.onclick = () => openEdit(b.dataset.v105Edit));
-    qsa('[data-v105-sold]').forEach(b => b.onclick = () => toggleSold(b.dataset.v105Sold));
-    qsa('[data-v105-delete]').forEach(b => b.onclick = () => delVehicle(b.dataset.v105Delete));
+    qsa("[data-v1011-edit]").forEach(btn => btn.onclick = () => openEdit(btn.dataset.v1011Edit));
+    qsa("[data-v1011-sold]").forEach(btn => btn.onclick = () => toggleSold(btn.dataset.v1011Sold));
+    qsa("[data-v1011-delete]").forEach(btn => btn.onclick = () => deleteVehicle(btn.dataset.v1011Delete));
   }
 
   async function refresh(){
-    const tbody = qs('#liveInventoryRows');
+    const tbody = qs("#liveInventoryRows");
     if (tbody) tbody.innerHTML = '<tr><td colspan="6">Loading live inventory...</td></tr>';
-    setStatus(false, 'Loading...');
+    setStatus(false, "Loading...");
+
     try {
-      const data = await api('/inventory', {method:'GET'});
-      MLM_LIVE_INV = Array.isArray(data.inventory) ? data.inventory : [];
-      setStatus(true, MLM_LIVE_INV.length + ' live vehicle' + (MLM_LIVE_INV.length === 1 ? '' : 's'));
-      const total = qs('#totalVehicles');
-      if (total) total.textContent = MLM_LIVE_INV.length;
-      const featured = qs('#statFeatured');
-      if (featured) featured.textContent = MLM_LIVE_INV.filter(v => !!v.featured).length + ' featured';
+      const data = await api("/inventory", { method:"GET" });
+      LIVE_INV = Array.isArray(data.inventory) ? data.inventory : [];
+      setStatus(true, LIVE_INV.length + " live vehicle" + (LIVE_INV.length === 1 ? "" : "s"));
+
+      const total = qs("#totalVehicles");
+      if (total) total.textContent = LIVE_INV.length;
+      const featured = qs("#statFeatured");
+      if (featured) featured.textContent = LIVE_INV.filter(v => !!v.featured).length + " featured";
+
       render();
     } catch(e) {
-      setStatus(false, 'Could not load live inventory');
+      setStatus(false, "Could not load live inventory");
       if (tbody) tbody.innerHTML = '<tr><td colspan="6">Could not load live inventory: ' + esc(e.message) + '</td></tr>';
     }
   }
 
   function openEdit(id){
-    const v = MLM_LIVE_INV.find(x => String(x.id) === String(id));
-    const modal = qs('#vehicleEditModal');
-    const form = qs('#vehicleEditForm');
+    const v = LIVE_INV.find(x => String(x.id) === String(id));
+    const modal = qs("#vehicleEditModal");
+    const form = qs("#vehicleEditForm");
     if (!v || !modal || !form) {
-      alert('Editor could not open. Missing vehicle/modal/form.');
+      alert("Editor could not open. Missing vehicle, modal, or form.");
       return;
     }
-    const set = (name, value) => { if (form.elements[name]) form.elements[name].value = value ?? ''; };
-    set('id', v.id);
-    set('year', v.year);
-    set('make', v.make);
-    set('model', v.model);
-    set('trim', v.trim);
-    set('price', v.price);
-    setMoneyInputValue(qs('#calcVehiclePrice'), v.price);
-    set('mileage', v.mileage || v.kilometers || '');
-    set('bodyStyle', v.bodyStyle);
-    set('drivetrain', v.drivetrain);
-    set('transmission', v.transmission);
-    set('fuel', v.fuel);
-    set('vin', v.vin);
-    set('stockNumber', v.stockNumber);
-    set('exteriorColor', v.exteriorColor);
-    set('interiorColor', v.interiorColor);
-    set('description', v.description);
-    set('features', Array.isArray(v.features) ? v.features.join(', ') : (v.features || ''));
+
+    const set = (name, value) => { if (form.elements[name]) form.elements[name].value = value ?? ""; };
+
+    set("id", v.id);
+    set("year", v.year);
+    set("make", v.make);
+    set("model", v.model);
+    set("trim", v.trim);
+    set("price", v.price);
+    set("mileage", v.mileage || v.kilometers || "");
+    set("bodyStyle", v.bodyStyle);
+    set("drivetrain", v.drivetrain);
+    set("transmission", v.transmission);
+    set("fuel", v.fuel);
+    set("vin", v.vin);
+    set("stockNumber", v.stockNumber);
+    set("exteriorColor", v.exteriorColor);
+    set("interiorColor", v.interiorColor);
+    set("description", v.description);
+    set("features", Array.isArray(v.features) ? v.features.join(", ") : (v.features || ""));
+
+    set("financeRate", v.financeRate || "7");
+    set("financeTermMonths", v.financeTermMonths || "84");
+    set("taxRate", 12);
+    set("downPayment", v.downPayment || 0);
+
+    const calcPrice = qs("#calcVehiclePrice");
+    if (calcPrice) calcPrice.value = v.price ? Number(v.price).toLocaleString() : "";
+
     if (form.elements.featured) form.elements.featured.checked = !!v.featured;
-    if (form.elements.sold) form.elements.sold.checked = !!v.sold || String(v.status || '').toLowerCase() === 'sold';
-    modal.classList.add('active');
-    modal.setAttribute('aria-hidden','false');
+    if (form.elements.sold) form.elements.sold.checked = !!v.sold || String(v.status || "").toLowerCase() === "sold";
+
+    modal.classList.add("active");
+    modal.setAttribute("aria-hidden", "false");
+
+    calculatePayments();
   }
 
   function closeEdit(){
-    const modal = qs('#vehicleEditModal');
-    if (modal) {
-      modal.classList.remove('active');
-      modal.setAttribute('aria-hidden','true');
-    }
+    const modal = qs("#vehicleEditModal");
+    if (!modal) return;
+    modal.classList.remove("active");
+    modal.setAttribute("aria-hidden", "true");
   }
 
   async function saveForm(e){
-    e.preventDefault();
-    e.stopImmediatePropagation();
-
-    const form = qs('#vehicleEditForm');
-    const fd = new FormData(form);
-    const id = fd.get('id');
-    if (!id) {
-      alert('No vehicle ID found. Cannot save.');
-      return;
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
     }
+    if (saveInProgress) return;
+
+    const form = qs("#vehicleEditForm");
+    if (!form) return alert("Edit form not found.");
+
+    const id = form.elements.id?.value;
+    if (!id) return alert("No vehicle ID found. Cannot save.");
+
+    const calc = calculatePayments();
+    const fd = new FormData(form);
 
     const saveBtn = form.querySelector('button[type="submit"]');
+    saveInProgress = true;
+
     if (saveBtn) {
       saveBtn.disabled = true;
-      saveBtn.textContent = 'Saving...';
+      saveBtn.textContent = "Saving...";
     }
 
-    const calcVehiclePriceValue = parseMoneyInput(qs('#calcVehiclePrice')?.value || form.elements.price?.value || 0);
-    if (form.elements.price) form.elements.price.value = calcVehiclePriceValue;
-    const calculatedBeforeSave = calculatePayments();
-
     const payload = {
-      year: fd.get('year'),
-      make: fd.get('make'),
-      model: fd.get('model'),
-      trim: fd.get('trim'),
-      price: calcVehiclePriceValue,
-      mileage: fd.get('mileage'),
-      kilometers: fd.get('mileage'),
-      bodyStyle: fd.get('bodyStyle'),
-      drivetrain: fd.get('drivetrain'),
-      transmission: fd.get('transmission'),
-      fuel: fd.get('fuel'),
-      vin: fd.get('vin'),
-      stockNumber: fd.get('stockNumber'),
-      exteriorColor: fd.get('exteriorColor'),
-      interiorColor: fd.get('interiorColor'),
-      description: fd.get('description'),
-      features: fd.get('features'),
+      year: fd.get("year"),
+      make: fd.get("make"),
+      model: fd.get("model"),
+      trim: fd.get("trim"),
+      price: calc.price,
+      mileage: fd.get("mileage"),
+      kilometers: fd.get("mileage"),
+      bodyStyle: fd.get("bodyStyle"),
+      drivetrain: fd.get("drivetrain"),
+      transmission: fd.get("transmission"),
+      fuel: fd.get("fuel"),
+      vin: fd.get("vin"),
+      stockNumber: fd.get("stockNumber"),
+      exteriorColor: fd.get("exteriorColor"),
+      interiorColor: fd.get("interiorColor"),
+      description: fd.get("description"),
+      features: fd.get("features"),
       featured: !!form.elements.featured?.checked,
       sold: !!form.elements.sold?.checked,
-      status: form.elements.sold?.checked ? 'sold' : 'available'
+      status: form.elements.sold?.checked ? "sold" : "available",
+      financeRate: calc.financeRate,
+      financeTermMonths: calc.financeTermMonths,
+      taxRate: 12,
+      downPayment: calc.downPayment,
+      monthlyPayment: calc.monthlyPayment,
+      biweeklyPayment: calc.biweeklyPayment,
+      weeklyPayment: calc.weeklyPayment,
+      paymentNote: form.elements.paymentNote?.value || ""
     };
 
     try {
-      await api('/inventory/' + encodeURIComponent(id), {method:'PATCH', json: payload});
+      await api("/inventory/" + encodeURIComponent(id), { method:"PATCH", json:payload });
       closeEdit();
       await refresh();
-      alert('Vehicle saved successfully.');
-    } catch(e2) {
-      alert('Could not save vehicle: ' + e2.message);
+      alert("Vehicle saved successfully.");
+    } catch(err) {
+      alert("Could not save vehicle: " + err.message);
     } finally {
+      saveInProgress = false;
       if (saveBtn) {
         saveBtn.disabled = false;
-        saveBtn.textContent = 'Save Vehicle';
+        saveBtn.textContent = "Save Vehicle";
       }
     }
   }
 
   async function toggleSold(id){
-    const v = MLM_LIVE_INV.find(x => String(x.id) === String(id));
+    const v = LIVE_INV.find(x => String(x.id) === String(id));
     if (!v) return;
-    const sold = !!v.sold || String(v.status || '').toLowerCase() === 'sold';
+    const sold = !!v.sold || String(v.status || "").toLowerCase() === "sold";
     try {
-      await api('/inventory/' + encodeURIComponent(id), {method:'PATCH', json:{sold:!sold, status: !sold ? 'sold' : 'available'}});
+      await api("/inventory/" + encodeURIComponent(id), { method:"PATCH", json:{ sold:!sold, status:!sold ? "sold" : "available" } });
       await refresh();
     } catch(e) {
-      alert('Could not update vehicle: ' + e.message);
+      alert("Could not update vehicle: " + e.message);
     }
   }
 
-  async function delVehicle(id){
-    const v = MLM_LIVE_INV.find(x => String(x.id) === String(id));
+  async function deleteVehicle(id){
+    const v = LIVE_INV.find(x => String(x.id) === String(id));
     if (!v) return;
-    if (!confirm('Delete ' + title(v) + ' from the live inventory?')) return;
+    if (!confirm("Delete " + title(v) + " from the live inventory?")) return;
+
     try {
-      await api('/inventory/' + encodeURIComponent(id), {method:'DELETE'});
+      await api("/inventory/" + encodeURIComponent(id), { method:"DELETE" });
       await refresh();
     } catch(e) {
-      alert('Could not delete vehicle: ' + e.message);
+      alert("Could not delete vehicle: " + e.message);
     }
   }
 
   function bind(){
-    if (!qs('#liveInventoryRows')) return;
-    const form = qs('#vehicleEditForm');
+    if (!qs("#liveInventoryRows")) return;
 
-    const refreshBtn = qs('#refreshLiveInventory');
+    const form = qs("#vehicleEditForm");
+    const refreshBtn = qs("#refreshLiveInventory");
+    const search = qs("#liveInventorySearch");
+    const filter = qs("#liveInventoryFilter");
+    const closeBtn = qs("#closeVehicleEdit");
+    const cancelBtn = qs("#cancelVehicleEdit");
+    const modal = qs("#vehicleEditModal");
+
     if (refreshBtn) refreshBtn.onclick = refresh;
-
-    const search = qs('#liveInventorySearch');
     if (search) search.oninput = render;
-
-    const filter = qs('#liveInventoryFilter');
     if (filter) filter.onchange = render;
-
-    const closeBtn = qs('#closeVehicleEdit');
     if (closeBtn) closeBtn.onclick = closeEdit;
-    const cancelBtn = qs('#cancelVehicleEdit');
     if (cancelBtn) cancelBtn.onclick = closeEdit;
-
-    const modal = qs('#vehicleEditModal');
-    if (modal) modal.onclick = (ev) => { if (ev.target === modal) closeEdit(); };
+    if (modal) modal.onclick = ev => { if (ev.target === modal) closeEdit(); };
 
     if (form) {
       form.onsubmit = saveForm;
       const saveBtn = form.querySelector('button[type="submit"]');
-      if (saveBtn) saveBtn.onclick = (ev) => { ev.preventDefault(); saveForm(ev); };
+      if (saveBtn) saveBtn.onclick = saveForm;
     }
+
+    const calcPrice = qs("#calcVehiclePrice");
+    const mainPrice = qs('#vehicleEditForm [name="price"]');
+
+    function fromCalcPrice(){
+      if (mainPrice && calcPrice) mainPrice.value = parseMoney(calcPrice.value);
+      calculatePayments();
+    }
+
+    function fromMainPrice(){
+      if (calcPrice && mainPrice) calcPrice.value = mainPrice.value;
+      calculatePayments();
+    }
+
+    if (calcPrice) calcPrice.oninput = fromCalcPrice;
+    if (mainPrice) mainPrice.oninput = fromMainPrice;
+
+    ["financeTermMonths", "financeRate", "downPayment"].forEach(name => {
+      const el = qs(`#vehicleEditForm [name="${name}"]`);
+      if (el) {
+        el.oninput = calculatePayments;
+        el.onchange = calculatePayments;
+      }
+    });
 
     refresh();
     window.MLM_DIRECT_INVENTORY_REFRESH = refresh;
+    window.MLM_CALCULATE_PAYMENTS = calculatePayments;
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', bind);
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", bind);
   } else {
     bind();
   }
