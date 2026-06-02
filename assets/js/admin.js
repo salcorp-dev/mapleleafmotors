@@ -703,3 +703,320 @@ document.addEventListener('DOMContentLoaded', async () => {
   tabs();
   dashboard();
 });
+
+
+
+/* v10.4 Admin live inventory save fix
+   This patch binds the Live Inventory Manager directly to the current DOM.
+   It fixes cases where the Edit modal Save button appears to do nothing. */
+(() => {
+  "use strict";
+
+  let liveInventoryPatchLoaded = false;
+  let liveInventoryCache = [];
+
+  function q(s, p = document) { return p.querySelector(s); }
+  function qa(s, p = document) { return Array.from(p.querySelectorAll(s)); }
+
+  function htmlEscape(value) {
+    return String(value || "").replace(/[&<>"']/g, c => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+    }[c]));
+  }
+
+  function getToken() {
+    return sessionStorage.getItem("mlm_admin_session") || "";
+  }
+
+  async function getAdminApiBase() {
+    try {
+      const res = await fetch("../assets/data/config.json", { cache: "no-store" });
+      if (res.ok) {
+        const cfg = await res.json();
+        if (cfg.adminApiUrl) return cfg.adminApiUrl.replace(/\/$/, "");
+      }
+    } catch (e) {}
+    return "https://maple-leaf-inventory.sal96wpg.workers.dev/admin";
+  }
+
+  async function liveAdminRequest(path, options = {}) {
+    const base = await getAdminApiBase();
+    const headers = Object.assign({}, options.headers || {}, {
+      Authorization: `Bearer ${getToken()}`
+    });
+
+    if (options.json) {
+      headers["Content-Type"] = "application/json";
+      options.body = JSON.stringify(options.json);
+      delete options.json;
+    }
+
+    const res = await fetch(`${base}${path}`, Object.assign({}, options, { headers }));
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok || data.error) {
+      throw new Error(data.error || `Request failed (${res.status})`);
+    }
+
+    return data;
+  }
+
+  function setLiveStatus(ok, msg) {
+    const el = q("#liveInventoryStatus");
+    if (!el) return;
+    el.textContent = msg;
+    el.classList.toggle("warn", !ok);
+  }
+
+  function titleOf(v) {
+    return v.title || [v.year, v.make, v.model, v.trim].filter(Boolean).join(" ") || "Untitled vehicle";
+  }
+
+  function imageOf(v) {
+    if (Array.isArray(v.images) && v.images.length) return v.images[0];
+    return v.image || "";
+  }
+
+  function kmOf(v) {
+    return Number(v.mileage || v.kilometers || 0);
+  }
+
+  function filteredInventory() {
+    const search = (q("#liveInventorySearch")?.value || "").toLowerCase().trim();
+    const filter = q("#liveInventoryFilter")?.value || "";
+
+    return liveInventoryCache.filter(v => {
+      const text = [v.title, v.year, v.make, v.model, v.trim, v.vin, v.stockNumber, v.bodyStyle, v.drivetrain, v.transmission].join(" ").toLowerCase();
+      const sold = !!v.sold || String(v.status || "").toLowerCase() === "sold";
+      const featured = !!v.featured;
+
+      if (search && !text.includes(search)) return false;
+      if (filter === "available" && sold) return false;
+      if (filter === "sold" && !sold) return false;
+      if (filter === "featured" && !featured) return false;
+      return true;
+    });
+  }
+
+  function renderInventoryRows() {
+    const tbody = q("#liveInventoryRows");
+    if (!tbody) return;
+
+    const rows = filteredInventory();
+    tbody.innerHTML = rows.map(v => {
+      const sold = !!v.sold || String(v.status || "").toLowerCase() === "sold";
+      const img = imageOf(v);
+      return `
+        <tr>
+          <td>${img ? `<img class="inventory-thumb" src="${htmlEscape(img)}" alt="">` : `<div class="inventory-thumb"></div>`}</td>
+          <td><strong>${htmlEscape(titleOf(v))}</strong><br><small>${htmlEscape(v.vin || "")}</small></td>
+          <td>${kmOf(v).toLocaleString()} km<br><small>${htmlEscape([v.bodyStyle, v.drivetrain, v.transmission].filter(Boolean).join(" · "))}</small></td>
+          <td><strong>$${Number(v.price || 0).toLocaleString()}</strong></td>
+          <td>${sold ? '<span class="status-chip warn">Sold</span>' : '<span class="status-chip ok">Available</span>'}${v.featured ? '<br><span class="status-chip">Featured</span>' : ''}</td>
+          <td>
+            <button class="btn small light" type="button" data-live-edit="${htmlEscape(v.id)}">Edit</button>
+            <button class="btn small light" type="button" data-live-sold="${htmlEscape(v.id)}">${sold ? "Mark Available" : "Mark Sold"}</button>
+            <button class="btn small light" type="button" data-live-delete="${htmlEscape(v.id)}">Delete</button>
+          </td>
+        </tr>`;
+    }).join("") || `<tr><td colspan="6">No live vehicles found.</td></tr>`;
+
+    qa("[data-live-edit]").forEach(btn => btn.addEventListener("click", () => openEditModal(btn.dataset.liveEdit)));
+    qa("[data-live-sold]").forEach(btn => btn.addEventListener("click", () => toggleSold(btn.dataset.liveSold)));
+    qa("[data-live-delete]").forEach(btn => btn.addEventListener("click", () => deleteVehicle(btn.dataset.liveDelete)));
+  }
+
+  async function refreshLiveInventory() {
+    const tbody = q("#liveInventoryRows");
+    if (tbody) tbody.innerHTML = `<tr><td colspan="6">Loading live inventory...</td></tr>`;
+    setLiveStatus(false, "Loading...");
+
+    try {
+      const data = await liveAdminRequest("/inventory", { method: "GET" });
+      liveInventoryCache = Array.isArray(data.inventory) ? data.inventory : [];
+      setLiveStatus(true, `${liveInventoryCache.length} live vehicle${liveInventoryCache.length === 1 ? "" : "s"}`);
+      renderInventoryRows();
+
+      const totalVehicles = q("#totalVehicles");
+      if (totalVehicles) totalVehicles.textContent = liveInventoryCache.length;
+
+      const statFeatured = q("#statFeatured");
+      if (statFeatured) statFeatured.textContent = `${liveInventoryCache.filter(v => !!v.featured).length} featured`;
+    } catch (err) {
+      setLiveStatus(false, "Could not load live inventory");
+      if (tbody) tbody.innerHTML = `<tr><td colspan="6">Could not load live inventory: ${htmlEscape(err.message)}</td></tr>`;
+    }
+  }
+
+  function openEditModal(id) {
+    const v = liveInventoryCache.find(x => String(x.id) === String(id));
+    const modal = q("#vehicleEditModal");
+    const form = q("#vehicleEditForm");
+    if (!v || !modal || !form) {
+      alert("Could not open editor. Vehicle or edit form was not found.");
+      return;
+    }
+
+    const set = (name, value) => {
+      if (form.elements[name]) form.elements[name].value = value ?? "";
+    };
+
+    set("id", v.id);
+    set("year", v.year);
+    set("make", v.make);
+    set("model", v.model);
+    set("trim", v.trim);
+    set("price", v.price);
+    set("mileage", v.mileage || v.kilometers || "");
+    set("bodyStyle", v.bodyStyle);
+    set("drivetrain", v.drivetrain);
+    set("transmission", v.transmission);
+    set("fuel", v.fuel);
+    set("vin", v.vin);
+    set("stockNumber", v.stockNumber);
+    set("exteriorColor", v.exteriorColor);
+    set("interiorColor", v.interiorColor);
+    set("description", v.description);
+    set("features", Array.isArray(v.features) ? v.features.join(", ") : (v.features || ""));
+
+    if (form.elements.featured) form.elements.featured.checked = !!v.featured;
+    if (form.elements.sold) form.elements.sold.checked = !!v.sold || String(v.status || "").toLowerCase() === "sold";
+
+    modal.classList.add("active");
+    modal.setAttribute("aria-hidden", "false");
+  }
+
+  function closeEditModal() {
+    const modal = q("#vehicleEditModal");
+    if (!modal) return;
+    modal.classList.remove("active");
+    modal.setAttribute("aria-hidden", "true");
+  }
+
+  async function saveEditForm(event) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const form = event.currentTarget;
+    const fd = new FormData(form);
+    const id = fd.get("id");
+
+    if (!id) {
+      alert("Could not save because this vehicle has no ID.");
+      return;
+    }
+
+    const submit = form.querySelector('button[type="submit"]');
+    if (submit) {
+      submit.disabled = true;
+      submit.textContent = "Saving...";
+    }
+
+    const payload = {
+      year: fd.get("year"),
+      make: fd.get("make"),
+      model: fd.get("model"),
+      trim: fd.get("trim"),
+      price: fd.get("price"),
+      mileage: fd.get("mileage"),
+      kilometers: fd.get("mileage"),
+      bodyStyle: fd.get("bodyStyle"),
+      drivetrain: fd.get("drivetrain"),
+      transmission: fd.get("transmission"),
+      fuel: fd.get("fuel"),
+      vin: fd.get("vin"),
+      stockNumber: fd.get("stockNumber"),
+      exteriorColor: fd.get("exteriorColor"),
+      interiorColor: fd.get("interiorColor"),
+      description: fd.get("description"),
+      features: fd.get("features"),
+      featured: !!form.elements.featured?.checked,
+      sold: !!form.elements.sold?.checked,
+      status: form.elements.sold?.checked ? "sold" : "available"
+    };
+
+    try {
+      await liveAdminRequest(`/inventory/${encodeURIComponent(id)}`, {
+        method: "PATCH",
+        json: payload
+      });
+
+      closeEditModal();
+      await refreshLiveInventory();
+      alert("Vehicle saved successfully.");
+    } catch (err) {
+      alert("Could not save vehicle: " + err.message);
+    } finally {
+      if (submit) {
+        submit.disabled = false;
+        submit.textContent = "Save Vehicle";
+      }
+    }
+  }
+
+  async function toggleSold(id) {
+    const v = liveInventoryCache.find(x => String(x.id) === String(id));
+    if (!v) return;
+
+    const sold = !!v.sold || String(v.status || "").toLowerCase() === "sold";
+
+    try {
+      await liveAdminRequest(`/inventory/${encodeURIComponent(id)}`, {
+        method: "PATCH",
+        json: { sold: !sold, status: !sold ? "sold" : "available" }
+      });
+      await refreshLiveInventory();
+    } catch (err) {
+      alert("Could not update vehicle: " + err.message);
+    }
+  }
+
+  async function deleteVehicle(id) {
+    const v = liveInventoryCache.find(x => String(x.id) === String(id));
+    if (!v) return;
+    if (!confirm(`Delete ${titleOf(v)} from the live website inventory?`)) return;
+
+    try {
+      await liveAdminRequest(`/inventory/${encodeURIComponent(id)}`, { method: "DELETE" });
+      await refreshLiveInventory();
+    } catch (err) {
+      alert("Could not delete vehicle: " + err.message);
+    }
+  }
+
+  function bindLiveInventoryPatch() {
+    if (liveInventoryPatchLoaded) return;
+    if (!q("#liveInventoryRows")) return;
+
+    liveInventoryPatchLoaded = true;
+
+    q("#refreshLiveInventory")?.addEventListener("click", refreshLiveInventory);
+    q("#liveInventorySearch")?.addEventListener("input", renderInventoryRows);
+    q("#liveInventoryFilter")?.addEventListener("change", renderInventoryRows);
+
+    q("#closeVehicleEdit")?.addEventListener("click", closeEditModal);
+    q("#cancelVehicleEdit")?.addEventListener("click", closeEditModal);
+
+    const modal = q("#vehicleEditModal");
+    if (modal) modal.addEventListener("click", e => {
+      if (e.target === modal) closeEditModal();
+    });
+
+    const form = q("#vehicleEditForm");
+    if (form) form.addEventListener("submit", saveEditForm);
+
+    refreshLiveInventory();
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", bindLiveInventoryPatch);
+  } else {
+    bindLiveInventoryPatch();
+  }
+
+  // Also bind after tab clicks in case the inventory section is activated later.
+  document.addEventListener("click", e => {
+    const tab = e.target.closest('[data-tab="inventory"], [data-goto="inventory"]');
+    if (tab) setTimeout(bindLiveInventoryPatch, 50);
+  });
+})();
