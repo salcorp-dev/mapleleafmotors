@@ -138,6 +138,7 @@ function tabs() {
       const section = $('#' + t.dataset.tab);
       if (section) section.classList.add('active');
       if (t.dataset.tab === 'leads') loadFinanceLeads();
+      if (t.dataset.tab === 'inventory') loadLiveInventory();
     };
   });
 
@@ -206,6 +207,241 @@ async function loadFinanceLeads(){if(!$('#financeLeadRows'))return;try{const res
 function filteredFinanceLeads(){const q=($('#leadSearch')?.value||'').toLowerCase().trim();const status=$('#leadStatusFilter')?.value||'';return FINANCE_LEADS.filter(l=>{const t=[l.firstName,l.lastName,l.phone,l.email,l.city,l.vehicleType,l.creditSituation,l.incomeType,l.budget].join(' ').toLowerCase();return(!q||t.includes(q))&&(!status||l.status===status)})}
 function renderFinanceLeads(){if(!$('#financeLeadRows'))return;$('#leadStatTotal').textContent=FINANCE_LEADS.length;$('#leadStatNew').textContent=FINANCE_LEADS.filter(l=>l.status==='NEW LEAD').length;$('#leadStatApproved').textContent=FINANCE_LEADS.filter(l=>l.status==='APPROVED').length;const rows=filteredFinanceLeads();$('#financeLeadRows').innerHTML=rows.map(l=>`<tr class="${l.status==='NEW LEAD'?'lead-row-new':''}"><td><strong>${escapeHtml(l.firstName)} ${escapeHtml(l.lastName)}</strong><br><a href="tel:${escapeHtml(l.phone)}">${escapeHtml(l.phone)}</a><br><a href="mailto:${escapeHtml(l.email)}">${escapeHtml(l.email)}</a><br><small>${escapeHtml(l.city)}, ${escapeHtml(l.province)}</small></td><td><b>${escapeHtml(l.vehicleType)}</b><br>Credit: ${escapeHtml(l.creditSituation)}<br>Income: ${escapeHtml(l.incomeType)}<br>Budget: ${escapeHtml(l.budget)}<br>Best time: ${escapeHtml(l.bestTime)} / ${escapeHtml(l.contactPreference)}</td><td><span class="badge-source">${escapeHtml(l.source||'website')}</span><br><small>${escapeHtml((l.createdAt||'').replace('T',' ').slice(0,16))}</small><br>${l.campaign?`<small>Campaign: ${escapeHtml(l.campaign)}</small><br>`:''}${l.placement?`<small>Placement: ${escapeHtml(l.placement)}</small>`:''}</td><td><select data-lead-status="${escapeHtml(l.id)}">${STATUSES.map(s=>`<option ${l.status===s?'selected':''}>${s}</option>`).join('')}</select><textarea class="lead-note-box" data-lead-notes="${escapeHtml(l.id)}" placeholder="Internal notes">${escapeHtml(l.notes||'')}</textarea><button class="btn small light" data-save-lead="${escapeHtml(l.id)}">Save</button></td><td><button class="btn small light" data-delete-lead="${escapeHtml(l.id)}">Delete</button></td></tr>`).join('')||'<tr><td colspan="5">No finance leads yet.</td></tr>';$$('[data-save-lead]').forEach(btn=>{btn.onclick=async()=>{const id=btn.dataset.saveLead;const status=$(`[data-lead-status="${CSS.escape(id)}"]`).value;const notes=$(`[data-lead-notes="${CSS.escape(id)}"]`).value;try{await adminRequest(`/leads/${encodeURIComponent(id)}`,{method:'PATCH',json:{status,notes}});await loadFinanceLeads()}catch(e){alert('Could not save lead: '+e.message)}}});$$('[data-delete-lead]').forEach(btn=>{btn.onclick=async()=>{if(!confirm('Delete this lead?'))return;try{await adminRequest(`/leads/${encodeURIComponent(btn.dataset.deleteLead)}`,{method:'DELETE'});await loadFinanceLeads()}catch(e){alert('Could not delete lead: '+e.message)}}})}
 function exportLeadsCsv(){const rows=[['Created','Status','First Name','Last Name','Phone','Email','City','Province','Vehicle Type','Credit Situation','Income Type','Budget','Best Time','Contact Preference','Notes','Source','Campaign','Adset','Placement','FBCLID']];FINANCE_LEADS.forEach(l=>rows.push([l.createdAt,l.status,l.firstName,l.lastName,l.phone,l.email,l.city,l.province,l.vehicleType,l.creditSituation,l.incomeType,l.budget,l.bestTime,l.contactPreference,l.notes,l.source,l.campaign,l.adset,l.placement,l.fbclid]));const csv=rows.map(r=>r.map(csvEscape).join(',')).join('\n');const blob=new Blob([csv],{type:'text/csv'});const x=document.createElement('a');x.href=URL.createObjectURL(blob);x.download=`maple-leaf-finance-leads-${new Date().toISOString().slice(0,10)}.csv`;x.click()}
+
+
+let LIVE_INVENTORY = [];
+
+async function loadLiveInventory() {
+  if (!document.querySelector('#liveInventoryRows')) return;
+  try {
+    const res = await adminRequest('/inventory', { method: 'GET' });
+    LIVE_INVENTORY = Array.isArray(res.inventory) ? res.inventory : [];
+    setLiveInventoryStatus(true, `${LIVE_INVENTORY.length} live vehicle${LIVE_INVENTORY.length === 1 ? '' : 's'}`);
+    renderLiveInventory();
+  } catch (err) {
+    setLiveInventoryStatus(false, 'Could not load live inventory');
+    const rows = document.querySelector('#liveInventoryRows');
+    if (rows) rows.innerHTML = `<tr><td colspan="6">Could not load live inventory: ${escapeHtml(err.message)}</td></tr>`;
+  }
+}
+
+function setLiveInventoryStatus(ok, msg) {
+  const el = document.querySelector('#liveInventoryStatus');
+  if (!el) return;
+  el.textContent = msg;
+  el.classList.toggle('warn', !ok);
+}
+
+function filteredLiveInventory() {
+  const q = (document.querySelector('#liveInventorySearch')?.value || '').toLowerCase().trim();
+  const filter = document.querySelector('#liveInventoryFilter')?.value || '';
+
+  return LIVE_INVENTORY.filter(v => {
+    const text = [
+      v.title, v.year, v.make, v.model, v.trim, v.vin, v.stockNumber,
+      v.bodyStyle, v.drivetrain, v.transmission
+    ].join(' ').toLowerCase();
+
+    const sold = !!v.sold || String(v.status || '').toLowerCase() === 'sold';
+    const featured = !!v.featured;
+
+    if (q && !text.includes(q)) return false;
+    if (filter === 'available' && sold) return false;
+    if (filter === 'sold' && !sold) return false;
+    if (filter === 'featured' && !featured) return false;
+    return true;
+  });
+}
+
+function vehicleTitle(v) {
+  return v.title || [v.year, v.make, v.model, v.trim].filter(Boolean).join(' ') || 'Untitled vehicle';
+}
+
+function vehicleKm(v) {
+  return Number(v.mileage || v.kilometers || 0);
+}
+
+function vehicleImage(v) {
+  if (Array.isArray(v.images) && v.images.length) return v.images[0];
+  if (v.image) return v.image;
+  return '';
+}
+
+function renderLiveInventory() {
+  const rows = document.querySelector('#liveInventoryRows');
+  if (!rows) return;
+
+  const arr = filteredLiveInventory();
+
+  rows.innerHTML = arr.map(v => {
+    const sold = !!v.sold || String(v.status || '').toLowerCase() === 'sold';
+    const img = vehicleImage(v);
+    return `
+      <tr>
+        <td>${img ? `<img class="inventory-thumb" src="${escapeHtml(img)}" alt="">` : `<div class="inventory-thumb"></div>`}</td>
+        <td>
+          <strong>${escapeHtml(vehicleTitle(v))}</strong><br>
+          <small>${escapeHtml(v.vin || '')}</small>
+        </td>
+        <td>
+          ${vehicleKm(v).toLocaleString()} km<br>
+          <small>${escapeHtml([v.bodyStyle, v.drivetrain, v.transmission].filter(Boolean).join(' · '))}</small>
+        </td>
+        <td><strong>$${Number(v.price || 0).toLocaleString()}</strong></td>
+        <td>
+          ${sold ? '<span class="status-chip warn">Sold</span>' : '<span class="status-chip ok">Available</span>'}
+          ${v.featured ? '<br><span class="status-chip">Featured</span>' : ''}
+        </td>
+        <td>
+          <button class="btn small light" data-edit-live="${escapeHtml(v.id)}">Edit</button>
+          <button class="btn small light" data-toggle-sold="${escapeHtml(v.id)}">${sold ? 'Mark Available' : 'Mark Sold'}</button>
+          <button class="btn small light" data-delete-live="${escapeHtml(v.id)}">Delete</button>
+        </td>
+      </tr>
+    `;
+  }).join('') || '<tr><td colspan="6">No live vehicles found.</td></tr>';
+
+  document.querySelectorAll('[data-edit-live]').forEach(btn => {
+    btn.onclick = () => openVehicleEdit(btn.dataset.editLive);
+  });
+
+  document.querySelectorAll('[data-toggle-sold]').forEach(btn => {
+    btn.onclick = async () => {
+      const v = LIVE_INVENTORY.find(x => String(x.id) === String(btn.dataset.toggleSold));
+      if (!v) return;
+      const sold = !!v.sold || String(v.status || '').toLowerCase() === 'sold';
+      try {
+        await adminRequest(`/inventory/${encodeURIComponent(v.id)}`, {
+          method: 'PATCH',
+          json: { sold: !sold, status: !sold ? 'sold' : 'available' }
+        });
+        await loadLiveInventory();
+      } catch (err) {
+        alert('Could not update vehicle: ' + err.message);
+      }
+    };
+  });
+
+  document.querySelectorAll('[data-delete-live]').forEach(btn => {
+    btn.onclick = async () => {
+      const v = LIVE_INVENTORY.find(x => String(x.id) === String(btn.dataset.deleteLive));
+      if (!v) return;
+      if (!confirm(`Delete ${vehicleTitle(v)} from the live website inventory?`)) return;
+      try {
+        await adminRequest(`/inventory/${encodeURIComponent(v.id)}`, { method: 'DELETE' });
+        await loadLiveInventory();
+      } catch (err) {
+        alert('Could not delete vehicle: ' + err.message);
+      }
+    };
+  });
+}
+
+function openVehicleEdit(id) {
+  const v = LIVE_INVENTORY.find(x => String(x.id) === String(id));
+  if (!v) return;
+
+  const modal = document.querySelector('#vehicleEditModal');
+  const form = document.querySelector('#vehicleEditForm');
+  if (!modal || !form) return;
+
+  form.elements.id.value = v.id || '';
+  form.elements.year.value = v.year || '';
+  form.elements.make.value = v.make || '';
+  form.elements.model.value = v.model || '';
+  form.elements.trim.value = v.trim || '';
+  form.elements.price.value = v.price || '';
+  form.elements.mileage.value = v.mileage || v.kilometers || '';
+  form.elements.bodyStyle.value = v.bodyStyle || '';
+  form.elements.drivetrain.value = v.drivetrain || '';
+  form.elements.transmission.value = v.transmission || '';
+  form.elements.fuel.value = v.fuel || '';
+  form.elements.vin.value = v.vin || '';
+  form.elements.stockNumber.value = v.stockNumber || '';
+  form.elements.exteriorColor.value = v.exteriorColor || '';
+  form.elements.interiorColor.value = v.interiorColor || '';
+  form.elements.description.value = v.description || '';
+  form.elements.features.value = Array.isArray(v.features) ? v.features.join(', ') : (v.features || '');
+  form.elements.featured.checked = !!v.featured;
+  form.elements.sold.checked = !!v.sold || String(v.status || '').toLowerCase() === 'sold';
+
+  modal.classList.add('active');
+  modal.setAttribute('aria-hidden', 'false');
+}
+
+function closeVehicleEdit() {
+  const modal = document.querySelector('#vehicleEditModal');
+  if (!modal) return;
+  modal.classList.remove('active');
+  modal.setAttribute('aria-hidden', 'true');
+}
+
+function bindLiveInventoryControls() {
+  const refresh = document.querySelector('#refreshLiveInventory');
+  if (refresh) refresh.onclick = loadLiveInventory;
+
+  const search = document.querySelector('#liveInventorySearch');
+  if (search) search.oninput = renderLiveInventory;
+
+  const filter = document.querySelector('#liveInventoryFilter');
+  if (filter) filter.onchange = renderLiveInventory;
+
+  const close = document.querySelector('#closeVehicleEdit');
+  if (close) close.onclick = closeVehicleEdit;
+
+  const cancel = document.querySelector('#cancelVehicleEdit');
+  if (cancel) cancel.onclick = closeVehicleEdit;
+
+  const modal = document.querySelector('#vehicleEditModal');
+  if (modal) {
+    modal.addEventListener('click', e => {
+      if (e.target === modal) closeVehicleEdit();
+    });
+  }
+
+  const form = document.querySelector('#vehicleEditForm');
+  if (form) {
+    form.onsubmit = async e => {
+      e.preventDefault();
+
+      const fd = new FormData(form);
+      const id = fd.get('id');
+
+      const payload = {
+        year: fd.get('year'),
+        make: fd.get('make'),
+        model: fd.get('model'),
+        trim: fd.get('trim'),
+        price: fd.get('price'),
+        mileage: fd.get('mileage'),
+        kilometers: fd.get('mileage'),
+        bodyStyle: fd.get('bodyStyle'),
+        drivetrain: fd.get('drivetrain'),
+        transmission: fd.get('transmission'),
+        fuel: fd.get('fuel'),
+        vin: fd.get('vin'),
+        stockNumber: fd.get('stockNumber'),
+        exteriorColor: fd.get('exteriorColor'),
+        interiorColor: fd.get('interiorColor'),
+        description: fd.get('description'),
+        features: fd.get('features'),
+        featured: form.elements.featured.checked,
+        sold: form.elements.sold.checked,
+        status: form.elements.sold.checked ? 'sold' : 'available'
+      };
+
+      try {
+        await adminRequest(`/inventory/${encodeURIComponent(id)}`, { method: 'PATCH', json: payload });
+        closeVehicleEdit();
+        await loadLiveInventory();
+        alert('Vehicle updated.');
+      } catch (err) {
+        alert('Could not save vehicle: ' + err.message);
+      }
+    };
+  }
+}
+
 
 async function dashboard() {
   if (!$('#leadRows')) return;
@@ -293,80 +529,7 @@ async function dashboard() {
   }
 
   function renderInventory() {
-    if (!$('#vehicleRows')) return;
-    $('#vehicleRows').innerHTML = data.inventory.map((v, i) => `
-      <tr>
-        <td>${escapeHtml(v.year)} ${escapeHtml(v.make)} ${escapeHtml(v.model)}</td>
-        <td>$${Number(v.price || 0).toLocaleString()}</td>
-        <td>${Number(v.mileage || 0).toLocaleString()} km</td>
-        <td>${v.featured ? 'Yes' : 'No'}</td>
-        <td><button class="btn small light" data-del="${i}">Delete</button></td>
-      </tr>
-    `).join('');
-
-    $$('[data-del]').forEach(b => {
-      b.onclick = () => {
-        if (confirm('Delete vehicle?')) {
-          data.inventory.splice(+b.dataset.del, 1);
-          refresh();
-        }
-      };
-    });
-  }
-
-  function renderClients() {
-    const deliveryRows = $('#deliveryRows');
-    const testimonialRows = $('#testimonialRows');
-    if (!deliveryRows || !testimonialRows) return;
-
-    const deliveries = data.deliveries || [];
-    const testimonials = data.testimonials || [];
-
-    deliveryRows.innerHTML = deliveries.map((d, i) => `
-      <tr>
-        <td>${escapeHtml(d.clientName || 'Client')}</td>
-        <td>${escapeHtml(d.vehicle || '')}</td>
-        <td>${(d.images || []).length}</td>
-        <td><button class="btn small light" data-delivery-delete="${escapeHtml(d.id || i)}" data-local-index="${i}">Delete</button></td>
-      </tr>
-    `).join('') || '<tr><td colspan="4">No delivery photos uploaded yet.</td></tr>';
-
-    testimonialRows.innerHTML = testimonials.map((t, i) => `
-      <tr>
-        <td>${escapeHtml(t.name || 'Client')}</td>
-        <td>${'★'.repeat(Number(t.rating || 5))}</td>
-        <td>${escapeHtml((t.text || '').slice(0, 70))}${(t.text || '').length > 70 ? '…' : ''}</td>
-        <td><button class="btn small light" data-testimonial-delete="${escapeHtml(t.id || i)}" data-local-index="${i}">Delete</button></td>
-      </tr>
-    `).join('') || '<tr><td colspan="4">No reviews uploaded yet.</td></tr>';
-
-    $$('[data-delivery-delete]').forEach(btn => {
-      btn.onclick = async () => {
-        if (!confirm('Delete this delivery photo entry?')) return;
-        const id = btn.dataset.deliveryDelete;
-        try {
-          if (id && !/^\d+$/.test(id)) await deleteClientFromApi(config, 'deliveries', id);
-          data.deliveries.splice(Number(btn.dataset.localIndex), 1);
-          await syncClientsFromApi(false);
-        } catch (e) {
-          alert('Delete failed: ' + e.message);
-        }
-      };
-    });
-
-    $$('[data-testimonial-delete]').forEach(btn => {
-      btn.onclick = async () => {
-        if (!confirm('Delete this review?')) return;
-        const id = btn.dataset.testimonialDelete;
-        try {
-          if (id && !/^\d+$/.test(id)) await deleteClientFromApi(config, 'testimonials', id);
-          data.testimonials.splice(Number(btn.dataset.localIndex), 1);
-          await syncClientsFromApi(false);
-        } catch (e) {
-          alert('Delete failed: ' + e.message);
-        }
-      };
-    });
+    // Live inventory is managed through renderLiveInventory().
   }
 
   const vehicleForm = $('#vehicleForm');
@@ -521,6 +684,9 @@ async function dashboard() {
     };
   }
 
+
+  bindLiveInventoryControls();
+  await loadLiveInventory();
 
   if ($('#refreshFinanceLeads')) $('#refreshFinanceLeads').onclick = loadFinanceLeads;
   if ($('#exportFinanceLeads')) $('#exportFinanceLeads').onclick = exportLeadsCsv;

@@ -284,6 +284,23 @@
   .lead-stat-strip { grid-template-columns: 1fr; }
   .kanban-board { grid-template-columns: 1fr; }
 }
+
+  .live-inventory-toolbar{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:16px}
+  .inventory-thumb{width:92px;height:62px;object-fit:cover;border-radius:10px;border:1px solid var(--line,#e5e7eb);background:#f3f4f6}
+  .live-status-dot{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:6px 10px;background:#dcfce7;color:#166534;font:800 12px/1 var(--font-ui,system-ui)}
+  .live-status-dot.warn{background:#fef3c7;color:#92400e}
+  .modal-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.58);z-index:999;display:none;align-items:center;justify-content:center;padding:18px}
+  .modal-backdrop.active{display:flex}
+  .admin-modal{width:min(860px,100%);max-height:92vh;overflow:auto;background:#fff;border-radius:22px;box-shadow:0 30px 100px rgba(15,23,42,.35);border:1px solid #e5e7eb}
+  .admin-modal-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:20px 24px;border-bottom:1px solid #e5e7eb}
+  .admin-modal-body{padding:24px}
+  .admin-modal-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .admin-modal-grid .full{grid-column:1/-1}
+  .admin-modal-actions{display:flex;justify-content:flex-end;gap:10px;padding:18px 24px;border-top:1px solid #e5e7eb;background:#f8fafc}
+  .checkbox-row{display:flex;align-items:center;gap:10px;font:700 14px/1 var(--font-ui,system-ui)}
+  .checkbox-row input{width:auto!important}
+  @media(max-width:720px){.admin-modal-grid{grid-template-columns:1fr}.live-inventory-toolbar{align-items:stretch}.live-inventory-toolbar>*{width:100%}}
+
 </style>
 </head>
 <body>
@@ -310,7 +327,7 @@
     <span class="sidebar-section">Inventory</span>
     <button class="sidebar-link" data-goto="inventory">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
-      Add Vehicle
+      Live Inventory
     </button>
 
     <span class="sidebar-section">Content</span>
@@ -369,7 +386,7 @@
     <div class="tabs">
       <button class="tab active" data-tab="leads">Finance Leads</button>
       <button class="tab" data-tab="pipeline">Pipeline</button>
-      <button class="tab" data-tab="inventory">Inventory</button>
+      <button class="tab" data-tab="inventory">Live Inventory</button>
       <button class="tab" data-tab="clients">Our Clients</button>
       <button class="tab" data-tab="settings">Import</button>
     </div>
@@ -388,7 +405,7 @@
           </div>
           <button class="btn btn-sm btn-outline" id="refreshFinanceLeads" type="button">Refresh</button>
           <button class="btn btn-sm" id="exportFinanceLeads" type="button">Export CSV</button>
-          <a class="btn btn-sm btn-outline" href="../financing.html#approval" target="_blank">Open Funnel</a>
+          <a class="btn btn-sm btn-outline" href="../get-approved.html" target="_blank">Open Funnel</a>
         </div>
       </div>
 
@@ -458,44 +475,131 @@
       <div class="kanban-board" id="kanban"></div>
     </section>
 
+
     <!-- ===== INVENTORY TAB ===== -->
     <section id="inventory" class="admin-section">
-      <div class="section-toolbar"><h2>Add Vehicle</h2></div>
-      <div class="admin-card" style="margin-bottom:20px;">
-        <form id="vehicleForm" class="grid-2" style="gap:12px;">
-          <input name="id" placeholder="ID (auto if blank)">
-          <input name="year" required placeholder="Year">
-          <input name="make" required placeholder="Make">
-          <input name="model" required placeholder="Model">
-          <input name="trim" placeholder="Trim">
-          <input name="price" required placeholder="Price">
-          <input name="mileage" required placeholder="Mileage">
-          <input name="bodyStyle" placeholder="Body style">
-          <div class="upload-box" style="grid-column:1/-1;">
-            <label style="display:block;margin-bottom:6px;font-family:var(--font-ui);font-size:13px;font-weight:600;">Upload Vehicle Photos</label>
-            <input id="vehicleImages" type="file" accept="image/*" multiple>
-          </div>
-          <input name="features" placeholder="Features (comma separated)" style="grid-column:1/-1;">
-          <textarea name="description" placeholder="Description" style="grid-column:1/-1;"></textarea>
-          <label style="display:flex;align-items:center;gap:8px;font-family:var(--font-ui);font-size:14px;">
-            <input name="featured" type="checkbox" style="width:auto;"> Featured
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;font-family:var(--font-ui);font-size:14px;">
-            <input name="sold" type="checkbox" style="width:auto;"> Sold
-          </label>
-          <button class="btn" style="grid-column:1/-1;">Save Vehicle</button>
-        </form>
+      <div class="live-inventory-toolbar">
+        <div>
+          <h2 style="margin-bottom:6px;">Live Inventory Manager</h2>
+          <p class="sub" style="margin-bottom:0;">This pulls the same live inventory posted by Listing Studio to Cloudflare. Edits and deletes update the public website.</p>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+          <span id="liveInventoryStatus" class="live-status-dot warn">Not loaded</span>
+          <button class="btn btn-sm btn-outline" id="refreshLiveInventory" type="button">Refresh Live Inventory</button>
+          <a class="btn btn-sm btn-outline" href="../inventory.html" target="_blank">View Public Inventory</a>
+        </div>
       </div>
-      <h3 style="margin-bottom:12px;">Current Inventory</h3>
+
+      <div class="lead-filters" style="margin-bottom:14px;">
+        <input id="liveInventorySearch" placeholder="Search year, make, model, VIN..." style="max-width:380px;">
+        <select id="liveInventoryFilter" style="max-width:220px;">
+          <option value="">All vehicles</option>
+          <option value="available">Available only</option>
+          <option value="sold">Sold only</option>
+          <option value="featured">Featured only</option>
+        </select>
+      </div>
+
       <div class="table-wrap">
         <table class="table">
-          <thead><tr><th>Vehicle</th><th>Price</th><th>Mileage</th><th>Featured</th><th>Action</th></tr></thead>
-          <tbody id="vehicleRows"></tbody>
+          <thead>
+            <tr>
+              <th>Photo</th>
+              <th>Vehicle</th>
+              <th>Details</th>
+              <th>Price</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="liveInventoryRows"></tbody>
         </table>
       </div>
     </section>
 
-    <!-- ===== CLIENTS TAB ===== -->
+    <div id="vehicleEditModal" class="modal-backdrop" aria-hidden="true">
+      <div class="admin-modal">
+        <form id="vehicleEditForm">
+          <div class="admin-modal-head">
+            <div>
+              <h3 style="margin:0;">Edit Live Vehicle</h3>
+              <p class="admin-help" style="margin:6px 0 0;">Changes save to Cloudflare and update the public website.</p>
+            </div>
+            <button class="btn btn-sm btn-outline" id="closeVehicleEdit" type="button">Close</button>
+          </div>
+          <div class="admin-modal-body">
+            <input type="hidden" name="id">
+            <div class="admin-modal-grid">
+              <input name="year" placeholder="Year">
+              <input name="make" placeholder="Make">
+              <input name="model" placeholder="Model">
+              <input name="trim" placeholder="Trim">
+              <input name="price" placeholder="Price">
+              <input name="mileage" placeholder="Kilometres">
+              <input name="bodyStyle" placeholder="Body style">
+              <input name="drivetrain" placeholder="Drivetrain">
+              <input name="transmission" placeholder="Transmission">
+              <input name="fuel" placeholder="Fuel">
+              <input name="vin" placeholder="VIN">
+              <input name="stockNumber" placeholder="Stock number">
+              <input name="exteriorColor" placeholder="Exterior color">
+              <input name="interiorColor" placeholder="Interior color">
+              <input class="full" name="features" placeholder="Features separated by commas">
+              <textarea class="full" name="description" placeholder="Description" style="min-height:110px;"></textarea>
+              <label class="checkbox-row"><input name="featured" type="checkbox"> Featured vehicle</label>
+              <label class="checkbox-row"><input name="sold" type="checkbox"> Mark as sold</label>
+            </div>
+          </div>
+          <div class="admin-modal-actions">
+            <button class="btn btn-outline" id="cancelVehicleEdit" type="button">Cancel</button>
+            <button class="btn" type="submit">Save Vehicle</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+<div id="vehicleEditModal" class="modal-backdrop" aria-hidden="true">
+      <div class="admin-modal">
+        <form id="vehicleEditForm">
+          <div class="admin-modal-head">
+            <div>
+              <h3 style="margin:0;">Edit Live Vehicle</h3>
+              <p class="admin-help" style="margin:6px 0 0;">Changes save to Cloudflare and update the public website.</p>
+            </div>
+            <button class="btn btn-sm btn-outline" id="closeVehicleEdit" type="button">Close</button>
+          </div>
+          <div class="admin-modal-body">
+            <input type="hidden" name="id">
+            <div class="admin-modal-grid">
+              <input name="year" placeholder="Year">
+              <input name="make" placeholder="Make">
+              <input name="model" placeholder="Model">
+              <input name="trim" placeholder="Trim">
+              <input name="price" placeholder="Price">
+              <input name="mileage" placeholder="Kilometres">
+              <input name="bodyStyle" placeholder="Body style">
+              <input name="drivetrain" placeholder="Drivetrain">
+              <input name="transmission" placeholder="Transmission">
+              <input name="fuel" placeholder="Fuel">
+              <input name="vin" placeholder="VIN">
+              <input name="stockNumber" placeholder="Stock number">
+              <input name="exteriorColor" placeholder="Exterior color">
+              <input name="interiorColor" placeholder="Interior color">
+              <input class="full" name="features" placeholder="Features separated by commas">
+              <textarea class="full" name="description" placeholder="Description" style="min-height:110px;"></textarea>
+              <label class="checkbox-row"><input name="featured" type="checkbox"> Featured vehicle</label>
+              <label class="checkbox-row"><input name="sold" type="checkbox"> Mark as sold</label>
+            </div>
+          </div>
+          <div class="admin-modal-actions">
+            <button class="btn btn-outline" id="cancelVehicleEdit" type="button">Cancel</button>
+            <button class="btn" type="submit">Save Vehicle</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+<!-- ===== CLIENTS TAB ===== -->
     <section id="clients" class="admin-section">
       <div class="section-toolbar">
         <div>

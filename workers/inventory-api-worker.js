@@ -160,6 +160,63 @@ export default {
       // ─────────────────────────────────────────────
       // Inventory write endpoint, kept for Listing Studio
       // ─────────────────────────────────────────────
+
+      // Admin live inventory management
+      if (url.pathname === "/admin/inventory" && request.method === "GET") {
+        await requireAdminSession(request, env);
+        return json({ ok: true, inventory: await getInventory(env) });
+      }
+
+      if (url.pathname.startsWith("/admin/inventory/") && request.method === "PATCH") {
+        await requireAdminSession(request, env);
+
+        const id = decodeURIComponent(url.pathname.replace("/admin/inventory/", ""));
+        const body = await request.json().catch(() => ({}));
+        const inventory = await getInventory(env);
+        const index = inventory.findIndex(v => String(v.id) === String(id));
+
+        if (index < 0) return json({ error: "Vehicle not found" }, 404);
+
+        const allowed = [
+          "title", "year", "make", "model", "trim", "price", "mileage", "kilometers",
+          "bodyStyle", "transmission", "fuel", "drivetrain", "vin", "stockNumber",
+          "exteriorColor", "interiorColor", "description", "features", "featured",
+          "sold", "status"
+        ];
+
+        const updates = {};
+        for (const k of allowed) {
+          if (Object.prototype.hasOwnProperty.call(body, k)) updates[k] = body[k];
+        }
+
+        if (Object.prototype.hasOwnProperty.call(updates, "price")) updates.price = Number(updates.price || 0);
+        if (Object.prototype.hasOwnProperty.call(updates, "mileage")) updates.mileage = Number(updates.mileage || 0);
+        if (Object.prototype.hasOwnProperty.call(updates, "kilometers")) updates.kilometers = Number(updates.kilometers || 0);
+        if (Object.prototype.hasOwnProperty.call(updates, "year")) updates.year = Number(updates.year || 0);
+        if (typeof updates.features === "string") {
+          updates.features = updates.features.split(",").map(x => x.trim()).filter(Boolean);
+        }
+
+        updates.updatedAt = new Date().toISOString();
+        inventory[index] = { ...inventory[index], ...updates };
+
+        await env.INVENTORY_KV.put(INVENTORY_KEY, JSON.stringify(inventory));
+        return json({ ok: true, vehicle: inventory[index], inventory });
+      }
+
+      if (url.pathname.startsWith("/admin/inventory/") && request.method === "DELETE") {
+        await requireAdminSession(request, env);
+
+        const id = decodeURIComponent(url.pathname.replace("/admin/inventory/", ""));
+        const inventory = await getInventory(env);
+        const next = inventory.filter(v => String(v.id) !== String(id));
+
+        if (next.length === inventory.length) return json({ error: "Vehicle not found" }, 404);
+
+        await env.INVENTORY_KV.put(INVENTORY_KEY, JSON.stringify(next));
+        return json({ ok: true, deleted: 1, inventory: next });
+      }
+
       if (url.pathname === "/inventory" && request.method === "POST") {
         await requireInventoryToken(request, env);
 
