@@ -10,7 +10,7 @@ async function loadConfig() {
     const config = await res.json();
     return { inventoryApiUrl: config.inventoryApiUrl || LIVE_INVENTORY_API, clientsApiUrl: config.clientsApiUrl || 'https://maple-leaf-inventory.sal96wpg.workers.dev/clients' };
   } catch (e) {
-    return { inventoryApiUrl: LIVE_INVENTORY_API };
+    return { inventoryApiUrl: LIVE_INVENTORY_API, clientsApiUrl: 'https://maple-leaf-inventory.sal96wpg.workers.dev/clients' };
   }
 }
 
@@ -42,9 +42,9 @@ async function siteData() {
     }
   }
 
-  if (cfg.clientsApiUrl) {
+  if (cfg.clientsApiUrl || true) {
     try {
-      const res = await fetch(cfg.clientsApiUrl, { cache: 'no-store' });
+      const res = await fetch((cfg.clientsApiUrl || 'https://maple-leaf-inventory.sal96wpg.workers.dev/clients'), { cache: 'no-store' });
       if (res.ok) {
         const clients = await res.json();
         if (Array.isArray(clients.deliveries)) fallback.deliveries = clients.deliveries.filter(x => x.archiveHidden !== true);
@@ -71,6 +71,11 @@ async function siteData() {
 
 // ── Helpers ──
 function money(n) { return `$${Number(n || 0).toLocaleString()}`; }
+function esc(v) {
+  return String(v ?? '').replace(/[&<>"']/g, c => ({
+    '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+  }[c]));
+}
 function isPublicVehicle(v) {
   return v?.archiveHidden !== true;
 }
@@ -111,7 +116,16 @@ function exampleMeta(v) {
   return parts.join(' · ') || 'Payment options vary by approval';
 }
 function disclaimerText() {
-  return 'Example photos only. Availability, exact vehicles, pricing, payments, and approvals vary by lender, dealer availability, province, credit profile, income, down payment, and trade-in.';
+  return 'Vehicle photos and categories are examples only. Availability, pricing, payments, and approvals vary by lender requirements, dealer availability, province, credit profile, income, down payment, and trade-in.';
+}
+
+function matchingUrl(params = {}) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value) query.set(key, value);
+  });
+  const qs = query.toString();
+  return `financing.html${qs ? `?${qs}` : ''}#approval`;
 }
 
 
@@ -145,7 +159,7 @@ function vehicleCard(v) {
       </div>
       <p class="vehicle-example-note">${disclaimerText()}</p>
       <div class="vehicle-actions">
-        <a class="btn btn-outline btn-sm" href="financing.html#approval">Start Approval</a>
+        <a class="btn btn-outline btn-sm" href="financing.html#approval">Check My Options</a>
         <a class="btn btn-sm" href="financing.html#approval">Get Matched</a>
       </div>
     </div>
@@ -177,32 +191,31 @@ function clientSlideCard(d) {
       <span class="pill">Recent delivery</span>
       <h3>${esc(d.vehicle || 'Happy Customer Delivery')}</h3>
       <p>${esc(d.quote || 'Real customers, real deliveries. Thank you for trusting Maple Leaf Motors.')}</p>
-      <a class="btn btn-sm" href="financing.html#approval">View Our Clients</a>
+      <a class="btn btn-sm" href="financing.html#approval">Start Matching</a>
     </div>
   </div>`;
 }
 
 function renderHomepageNavigationPreview(d, inv) {
   const navPreview = $('#homeNavPreview');
-  if (!navPreview) return;
-
-  navPreview.innerHTML = `
+  if (navPreview) {
+    navPreview.innerHTML = `
     <a class="home-nav-card" href="financing.html#approval">
-      <span>Start Approval</span>
-      <strong>Check your options</strong>
-      <small>Fast Canada-wide approval request.</small>
+      <span>Start Here</span>
+      <strong>Tell us what you need</strong>
+      <small>Fast Canada-wide matching request.</small>
     </a>
-    <a class="home-nav-card" href="financing.html#approval?type=car">
+    <a class="home-nav-card" href="${matchingUrl({ type: 'car' })}">
       <span>Cars</span>
       <strong>Sedans & hatchbacks</strong>
       <small>Commuter cars, budget-friendly options, and daily drivers.</small>
     </a>
-    <a class="home-nav-card" href="financing.html#approval?type=suv">
+    <a class="home-nav-card" href="${matchingUrl({ type: 'suv' })}">
       <span>SUVs</span>
       <strong>Family SUVs</strong>
       <small>AWD, family space, crossovers, and larger options.</small>
     </a>
-    <a class="home-nav-card" href="financing.html#approval?type=truck">
+    <a class="home-nav-card" href="${matchingUrl({ type: 'truck' })}">
       <span>Trucks</span>
       <strong>Pickup options</strong>
       <small>4x4, work trucks, towing, and larger vehicle options.</small>
@@ -212,6 +225,7 @@ function renderHomepageNavigationPreview(d, inv) {
       <strong>Talk to our team</strong>
       <small>Questions before applying? Reach out.</small>
     </a>`;
+  }
 
   const clientSlides = $('#homeClientSlideshow');
   if (clientSlides) {
@@ -222,7 +236,7 @@ function renderHomepageNavigationPreview(d, inv) {
           <span class="pill">Our Clients</span>
           <h3>Customer delivery photos will appear here.</h3>
           <p>Upload delivery photos in admin and they will rotate on the homepage.</p>
-          <a class="btn btn-sm" href="financing.html#approval">Start Approval</a>
+          <a class="btn btn-sm" href="financing.html#approval">Start Matching</a>
         </div>
       </div>`;
   }
@@ -327,7 +341,7 @@ async function renderInventory() {
     if (countEl) countEl.innerHTML = `<strong>${data.length}</strong> example${data.length !== 1 ? 's' : ''} shown`;
 
     grid.innerHTML = data.map(v => vehicleCard(v)).join('') ||
-      `<div class="no-results"><h3>No examples found</h3><p>Try adjusting your filters or start an approval request and we will match vehicles for you.</p><a class="btn" href="financing.html#approval">Reset Examples</a></div>`;
+      `<div class="no-results"><h3>No examples found</h3><p>Start a matching request and we will look for realistic vehicle options for you.</p><a class="btn" href="financing.html#approval">Start Matching</a></div>`;
   }
 
   ['searchInput', 'makeFilter', 'bodyFilter', 'priceFilter', 'sortFilter'].forEach(id => {
@@ -378,7 +392,7 @@ async function renderVehicle() {
     $('#vehicleDetail').innerHTML = `<div class="card" style="padding:40px;text-align:center;">
       <h2>Vehicle Not Found</h2>
       <p class="lead" style="margin:16px 0 24px;">This vehicle may have been removed or sold.</p>
-      <a class="btn" href="financing.html#approval">← Back to Inventory</a>
+      <a class="btn" href="financing.html#approval">Start Matching</a>
     </div>`;
     return;
   }
@@ -404,7 +418,7 @@ async function renderVehicle() {
     <div class="vehicle-breadcrumb">
       <a href="index.html">Home</a>
       <span>›</span>
-      <a href="financing.html#approval">Inventory</a>
+      <a href="financing.html#approval">Vehicle Examples</a>
       <span>›</span>
       <span style="color:var(--ink);">${title(v)}</span>
     </div>
@@ -461,10 +475,11 @@ async function renderVehicle() {
           <div class="features-grid">${featureHtml}</div>
         </div>` : ''}
 
+        <p class="vehicle-example-note">${disclaimerText()}</p>
         <div class="cta-stack">
-          <a class="btn btn-full btn-lg" href="financing.html?vehicle=${encodeURIComponent(v.id)}#approval">Start Approval →</a>
+          <a class="btn btn-full btn-lg" href="financing.html?vehicle=${encodeURIComponent(v.id)}#approval">Start Matching →</a>
           <a class="btn btn-full btn-outline" href="tel:12045092668">📞 Call 204-509-2668</a>
-          <a class="btn btn-ghost btn-full" href="financing.html#approval" style="text-align:center;">← Back to Inventory</a>
+          <a class="btn btn-ghost btn-full" href="financing.html#approval" style="text-align:center;">See What I Qualify For</a>
         </div>
         <p class="cta-note">No sensitive info collected · All credit situations welcome</p>
       </aside>
@@ -603,13 +618,13 @@ function wizard() {
   f.onsubmit = e => {
     e.preventDefault();
     Object.assign(data, Object.fromEntries(new FormData(f).entries()));
-    data.type = 'Approval Request';
+    data.type = 'Vehicle Matching Request';
     saveLead(data);
     f.innerHTML = `<div style="text-align:center;padding:48px 20px;">
       <div style="font-size:48px;margin-bottom:20px;">✅</div>
       <h2>Request Received</h2>
       <p class="lead" style="margin:14px 0 28px;">A Maple Leaf Motors specialist will contact you shortly to discuss your options.</p>
-      <a class="btn btn-lg" href="financing.html#approval">Browse Inventory →</a>
+      <a class="btn btn-lg" href="financing.html#approval">Start Matching →</a>
     </div>`;
   };
 

@@ -7,6 +7,10 @@
 
   const qs = (s, p = document) => p.querySelector(s);
   const qsa = (s, p = document) => Array.from(p.querySelectorAll(s));
+  const campaignKeys = [
+    'source', 'campaign', 'adset', 'ad', 'placement', 'fbclid',
+    'utm_source', 'utm_campaign', 'utm_medium', 'utm_content'
+  ];
 
   async function loadConfig() {
     try {
@@ -134,8 +138,15 @@
     funnelState.source = params.get('source') || 'website';
     funnelState.campaign = params.get('campaign') || '';
     funnelState.adset = params.get('adset') || '';
+    funnelState.ad = params.get('ad') || '';
     funnelState.placement = params.get('placement') || '';
     funnelState.fbclid = params.get('fbclid') || '';
+    funnelState.utm_source = params.get('utm_source') || '';
+    funnelState.utm_campaign = params.get('utm_campaign') || '';
+    funnelState.utm_medium = params.get('utm_medium') || '';
+    funnelState.utm_content = params.get('utm_content') || '';
+    funnelState.search = params.get('search') || '';
+    funnelState.budgetMax = params.get('budgetMax') || '';
     funnelState.pageUrl = location.href;
     funnelState.submittedAt = new Date().toISOString();
 
@@ -196,9 +207,15 @@
   }
 
   function initFunnel() {
-    // Capture vehicle ID from URL if coming from a vehicle detail page
-    const vehicleParam = new URLSearchParams(location.search).get('vehicle');
+    const params = new URLSearchParams(location.search);
+    const vehicleParam = params.get('vehicle');
     if (vehicleParam) funnelState.vehicleId = vehicleParam;
+    if (params.get('type')) funnelState.vehicleType = params.get('type');
+    if (params.get('search')) funnelState.vehicleSearch = params.get('search');
+    if (params.get('budgetMax')) funnelState.budgetMax = params.get('budgetMax');
+    campaignKeys.forEach(key => {
+      if (params.get(key)) funnelState[key] = params.get(key);
+    });
 
     qsa('.funnel-options').forEach(group => {
       group.addEventListener('click', e => {

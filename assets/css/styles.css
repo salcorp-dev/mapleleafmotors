@@ -2106,3 +2106,21 @@ label { font-family: var(--font-ui); font-size: 13px; font-weight: 600; color: v
 .home-clients-wide .client-slideshow>*{flex-basis:46%}
 @media(max-width:980px){.vehicle-category-grid{grid-template-columns:1fr}.vehicle-category-card.more{grid-column:auto}.home-clients-wide .client-slideshow>*{flex-basis:82%}}
 @media(max-width:640px){.vehicle-category-card{min-height:240px}.vehicle-category-card h3{margin-top:58px;font-size:25px}.home-clients-wide .client-slideshow>*{flex-basis:92%}}
+
+
+/* v11.2 clients wall fix */
+.client-slide-card img[src=""], .client-slide-card img:not([src]){display:none;}
+.client-slide-card{box-shadow:var(--shadow-soft);}
+#homeClientSlideshow:empty::before{
+  content:"Delivery photos will appear here after they are uploaded in admin.";
+  display:block;padding:28px;border:1px dashed var(--line);border-radius:18px;color:var(--muted);
+}
+
+/* Public policy pages */
+.policy-page{background:var(--bg);padding-top:52px}
+.policy-container{max-width:900px}
+.policy-card{margin-top:26px}
+.policy-card h2{font-size:24px;margin:28px 0 10px}
+.policy-card h2:first-child{margin-top:0}
+.policy-card p{font-family:var(--font-ui);color:var(--text);line-height:1.75}
+.policy-card a{color:var(--brand);font-weight:700;text-decoration:underline;text-underline-offset:3px}
