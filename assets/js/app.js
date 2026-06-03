@@ -182,18 +182,88 @@ function heroCarCard(v) {
 }
 
 
-function clientSlideCard(d) {
+function clientSlideCard(d, i = 0) {
   const imgs = deliveryImages(d);
   const img = imgs[0] || 'assets/images/maple-leaf-motors-logo.png';
-  return `<div class="client-slide-card">
-    <img src="${esc(img)}" alt="${esc(d.vehicle || 'Customer delivery')}" loading="lazy">
-    <div class="client-slide-copy">
-      <span class="pill">Recent delivery</span>
-      <h3>${esc(d.vehicle || 'Happy Customer Delivery')}</h3>
-      <p>${esc(d.quote || 'Real customers, real deliveries. Thank you for trusting Maple Leaf Motors.')}</p>
-      <a class="btn btn-sm" href="financing.html#approval">Start Matching</a>
+  const quote = d.quote || d.text || 'Real customers, real deliveries. Thank you for trusting Maple Leaf Motors.';
+  const client = d.clientName || d.name || 'Happy Customer';
+  const vehicle = d.vehicle || 'Recent Vehicle Delivery';
+  return `<article class="delivery-showcase-card ${i === 0 ? 'active' : ''}" data-delivery-card="${i}">
+    <div class="delivery-quote-side">
+      <span class="delivery-kicker">Recent delivery</span>
+      <h3>${esc(vehicle)}</h3>
+      <blockquote>“${esc(quote)}”</blockquote>
+      <div class="delivery-person">
+        <strong>${esc(client)}</strong>
+        <span>${esc(vehicle)}</span>
+      </div>
+      <div class="delivery-actions">
+        <a class="btn" href="financing.html#approval">Start Matching</a>
+        <span>Canada-wide vehicle matching support</span>
+      </div>
     </div>
-  </div>`;
+    <div class="delivery-photo-side">
+      <img src="${esc(img)}" alt="${esc(vehicle)} delivery photo" loading="lazy">
+      <div class="delivery-photo-badge">Customer Delivery</div>
+    </div>
+  </article>`;
+}
+
+function renderDeliveryShowcase(deliveries) {
+  const showcase = $('#homeDeliveryShowcase');
+  if (!showcase) return;
+
+  const items = (deliveries || []).filter(x => isVisibleDelivery(x) && deliveryImages(x).length);
+  if (!items.length) {
+    showcase.innerHTML = `<article class="delivery-showcase-card active delivery-empty">
+      <div class="delivery-quote-side">
+        <span class="delivery-kicker">Our Clients</span>
+        <h3>Customer delivery photos will appear here.</h3>
+        <blockquote>“Upload delivery photos and quotes in the admin portal, and they will display in this large homepage proof section.”</blockquote>
+        <div class="delivery-actions">
+          <a class="btn" href="financing.html#approval">Start Matching</a>
+          <span>Real delivery proof will rotate here automatically.</span>
+        </div>
+      </div>
+      <div class="delivery-photo-side delivery-placeholder">
+        <div>
+          <strong>Delivery Photo</strong>
+          <span>Admin uploads appear here</span>
+        </div>
+      </div>
+    </article>`;
+    return;
+  }
+
+  showcase.innerHTML = `
+    <div class="delivery-showcase-track">
+      ${items.slice(0, 10).map((item, i) => clientSlideCard(item, i)).join('')}
+    </div>
+    ${items.length > 1 ? `<div class="delivery-showcase-dots">
+      ${items.slice(0, 10).map((_, i) => `<button type="button" class="${i === 0 ? 'active' : ''}" data-delivery-dot="${i}" aria-label="Show delivery ${i + 1}"></button>`).join('')}
+    </div>` : ''}`;
+
+  const cards = $$('.delivery-showcase-card', showcase);
+  const dots = $$('[data-delivery-dot]', showcase);
+  let current = 0;
+
+  function show(index) {
+    if (!cards.length) return;
+    current = (index + cards.length) % cards.length;
+    cards.forEach((card, i) => card.classList.toggle('active', i === current));
+    dots.forEach((dot, i) => dot.classList.toggle('active', i === current));
+  }
+
+  dots.forEach(dot => {
+    dot.addEventListener('click', () => show(Number(dot.dataset.deliveryDot || 0)));
+  });
+
+  if (cards.length > 1) {
+    setInterval(() => {
+      if (document.hidden) return;
+      show(current + 1);
+    }, 5200);
+  }
 }
 
 function deliveryImages(d) {
@@ -258,20 +328,7 @@ function renderHomepageNavigationPreview(d, inv) {
       <small>Questions before applying? Reach out.</small>
     </a>`;
   }
-
-  const clientSlides = $('#homeClientSlideshow');
-  if (clientSlides) {
-    const deliveries = (d.deliveries || []).filter(x => isVisibleDelivery(x) && deliveryImages(x).length);
-    clientSlides.innerHTML = deliveries.length ? deliveries.slice(0, 10).map(clientSlideCard).join('') :
-      `<div class="client-slide-card client-slide-empty">
-        <div class="client-slide-copy">
-          <span class="pill">Our Clients</span>
-          <h3>Customer delivery photos will appear here.</h3>
-          <p>Upload delivery photos in admin and they will rotate on the homepage.</p>
-          <a class="btn btn-sm" href="financing.html#approval">Start Matching</a>
-        </div>
-      </div>`;
-  }
+  renderDeliveryShowcase(d.deliveries || []);
 }
 
 // ── Render Homepage ──
