@@ -2655,3 +2655,56 @@ label { font-family: var(--font-ui); font-size: 13px; font-weight: 600; color: v
     width:100%;
   }
 }
+
+
+/* v12.7 Funnel continue gating */
+.funnel-btn.is-disabled,
+.funnel-btn:disabled{
+  opacity:.48;
+  cursor:not-allowed;
+  transform:none !important;
+  box-shadow:none !important;
+  filter:grayscale(.15);
+}
+
+
+/* v12.8 Conditional text boxes for Other / Not sure */
+.funnel-conditional-detail{
+  margin-top:14px;
+  animation:fadeInDetail .18s ease;
+}
+.funnel-conditional-detail label{
+  display:grid;
+  gap:8px;
+}
+.funnel-conditional-detail span{
+  color:var(--ink);
+  font-family:var(--font-ui);
+  font-size:13px;
+  font-weight:900;
+}
+.funnel-conditional-detail textarea{
+  width:100%;
+  min-height:92px;
+  resize:vertical;
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:14px 15px;
+  font-family:var(--font-ui);
+  font-size:14px;
+  color:var(--ink);
+  background:#fff;
+  outline:none;
+  transition:border-color .15s ease, box-shadow .15s ease;
+}
+.funnel-conditional-detail textarea::placeholder{
+  color:#9ca3af;
+}
+.funnel-conditional-detail textarea:focus{
+  border-color:var(--brand);
+  box-shadow:0 0 0 4px rgba(193,18,31,.10);
+}
+@keyframes fadeInDetail{
+  from{opacity:0;transform:translateY(-4px)}
+  to{opacity:1;transform:translateY(0)}
+}

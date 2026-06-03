@@ -34,6 +34,59 @@
     box.classList.remove('show');
   }
 
+
+  function isStepComplete(showMessages = false) {
+    const step = qs(`.funnel-step[data-step="${currentStep}"]`);
+    if (!step) return true;
+
+    const group = qs('.funnel-options[data-name]', step);
+    if (group) {
+      const name = group.dataset.name;
+      if (!funnelState[name]) {
+        if (showMessages) showError('Please choose one option to continue.');
+        return false;
+      }
+    }
+
+    const required = qsa('input[required], select[required], textarea[required]', step);
+    for (const field of required) {
+      if (field.type === 'checkbox') {
+        if (!field.checked) {
+          if (showMessages) showError('Please confirm the consent checkbox to continue.');
+          return false;
+        }
+      } else if (!String(field.value || '').trim()) {
+        if (showMessages) {
+          showError('Please complete the required fields.');
+          field.focus();
+        }
+        return false;
+      }
+    }
+
+    if (showMessages) clearError();
+    return true;
+  }
+
+  function updateContinueState() {
+    const next = qs('#nextStep');
+    const submit = qs('#submitFunnel');
+    const complete = isStepComplete(false);
+
+    if (next && currentStep !== totalSteps - 1) {
+      next.disabled = !complete;
+      next.classList.toggle('is-disabled', !complete);
+      next.setAttribute('aria-disabled', String(!complete));
+    }
+
+    if (submit && currentStep === totalSteps - 1) {
+      submit.disabled = !complete;
+      submit.classList.toggle('is-disabled', !complete);
+      submit.setAttribute('aria-disabled', String(!complete));
+    }
+  }
+
+
   function updateProgress() {
     const pct = Math.round(((currentStep + 1) / totalSteps) * 100);
     const stepLabel = qs('#stepLabel');
@@ -49,6 +102,7 @@
     if (prev) prev.disabled = currentStep === 0;
     if (next) next.style.display = currentStep === totalSteps - 1 ? 'none' : '';
     if (submit) submit.style.display = currentStep === totalSteps - 1 ? '' : 'none';
+    updateContinueState();
   }
 
   function showStep(index) {
@@ -58,6 +112,7 @@
       step.classList.toggle('active', Number(step.dataset.step) === currentStep);
     });
     updateProgress();
+    updateAllConditionalDetails();
     // On mobile the form card is below the hero panel, so scroll to the form card
     // rather than the page top so the user stays in context.
     const formCard = qs('.funnel-form-card') || qs('.funnel-shell');
@@ -82,46 +137,99 @@
     btn.classList.add('selected', 'is-selected');
     btn.setAttribute('aria-pressed', 'true');
     clearError();
+    updateConditionalDetail(group);
+    updateContinueState();
   }
 
   function restoreSelectedOptions() {
     qsa('.funnel-options').forEach(group => {
       const value = funnelState[group.dataset.name];
-      if (!value) return;
+      if (!value) {
+        updateConditionalDetail(group);
+        return;
+      }
       const btn = qsa('.funnel-option', group).find(x => (x.dataset.value || x.textContent.trim()) === value);
       if (btn) setOption(group, btn);
+      else updateConditionalDetail(group);
     });
   }
 
+
+  function conditionalDetailConfig(value) {
+    const v = String(value || '').toLowerCase();
+    if (v === 'other' || v.includes('other')) {
+      return {
+        key: 'other',
+        label: 'Tell us more',
+        placeholder: 'Example: I am looking for a camper, motorcycle, work van, luxury vehicle, or something specific.'
+      };
+    }
+    if (v === 'not sure' || v.includes('not sure')) {
+      return {
+        key: 'notSure',
+        label: 'Tell us what you are thinking',
+        placeholder: 'Tell us what you are thinking — for example, “I need something reliable for winter” or “I want the lowest payment possible.”'
+      };
+    }
+    return null;
+  }
+
+  function detailFieldName(groupName, key) {
+    return `${groupName}_${key}Details`;
+  }
+
+  function updateConditionalDetail(group) {
+    if (!group) return;
+    const name = group.dataset.name;
+    const value = funnelState[name];
+    const step = group.closest('.funnel-step');
+    if (!step || !name) return;
+
+    let wrap = qs(`.funnel-conditional-detail[data-for="${name}"]`, step);
+    const config = conditionalDetailConfig(value);
+
+    if (!config) {
+      if (wrap) wrap.remove();
+      return;
+    }
+
+    const fieldName = detailFieldName(name, config.key);
+    if (!wrap) {
+      wrap = document.createElement('div');
+      wrap.className = 'funnel-conditional-detail';
+      wrap.dataset.for = name;
+      group.insertAdjacentElement('afterend', wrap);
+    }
+
+    wrap.innerHTML = `
+      <label>
+        <span>${config.label}</span>
+        <textarea name="${fieldName}" rows="3" placeholder="${config.placeholder}">${funnelState[fieldName] || ''}</textarea>
+      </label>
+    `;
+
+    const textarea = qs('textarea', wrap);
+    if (textarea) {
+      textarea.addEventListener('input', () => {
+        funnelState[fieldName] = textarea.value;
+        clearError();
+        updateContinueState();
+      });
+      textarea.addEventListener('change', () => {
+        funnelState[fieldName] = textarea.value;
+        clearError();
+        updateContinueState();
+      });
+    }
+  }
+
+  function updateAllConditionalDetails() {
+    qsa('.funnel-options[data-name]').forEach(updateConditionalDetail);
+  }
+
+
   function validateStep() {
-    const step = qs(`.funnel-step[data-step="${currentStep}"]`);
-    if (!step) return true;
-
-    const group = qs('.funnel-options[data-name]', step);
-    if (group) {
-      const name = group.dataset.name;
-      if (!funnelState[name]) {
-        showError('Please choose one option to continue.');
-        return false;
-      }
-    }
-
-    const required = qsa('input[required], select[required], textarea[required]', step);
-    for (const field of required) {
-      if (field.type === 'checkbox') {
-        if (!field.checked) {
-          showError('Please confirm the consent checkbox to continue.');
-          return false;
-        }
-      } else if (!field.value.trim()) {
-        showError('Please complete the required fields.');
-        field.focus();
-        return false;
-      }
-    }
-
-    clearError();
-    return true;
+    return isStepComplete(true);
   }
 
   function collectFormData() {
@@ -227,6 +335,11 @@
       });
     });
 
+    qsa('#financeFunnelForm input, #financeFunnelForm select, #financeFunnelForm textarea').forEach(field => {
+      field.addEventListener('input', updateContinueState);
+      field.addEventListener('change', updateContinueState);
+    });
+
     const next = qs('#nextStep');
     const prev = qs('#prevStep');
     const form = qs('#financeFunnelForm');
@@ -238,6 +351,7 @@
         collectFormData();
         showStep(currentStep + 1);
         restoreSelectedOptions();
+        updateContinueState();
       });
     }
 
@@ -247,6 +361,7 @@
         collectFormData();
         showStep(currentStep - 1);
         restoreSelectedOptions();
+        updateContinueState();
       });
     }
 
@@ -270,11 +385,13 @@
         funnelState.consent = checkbox.checked;
         label.classList.toggle('checked', checkbox.checked);
         clearError();
+        updateContinueState();
       });
     });
 
     updateProgress();
     restoreSelectedOptions();
+    updateContinueState();
   }
 
   if (document.readyState === 'loading') {
