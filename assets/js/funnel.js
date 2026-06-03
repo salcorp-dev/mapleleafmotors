@@ -155,22 +155,47 @@
   }
 
 
-  function conditionalDetailConfig(value) {
+  function conditionalDetailConfig(value, groupName = '') {
     const v = String(value || '').toLowerCase();
+    const group = String(groupName || '').toLowerCase();
+
+    const examples = {
+      vehicleType: {
+        other: 'Example: I am looking for a camper, motorcycle, work van, luxury vehicle, boat, or something specific.',
+        notSure: 'Tell us what you are thinking — for example, “I need something reliable for winter,” “I need a family SUV,” or “I want the lowest payment possible.”'
+      },
+      creditSituation: {
+        other: 'Example: I have a cosigner, I am rebuilding after collections, I am new to credit, or I am not sure what my credit looks like.',
+        notSure: 'Tell us what you know — for example, “I have never checked my credit,” “I missed payments before,” or “I think my credit is okay but I am not sure.”'
+      },
+      incomeType: {
+        other: 'Example: I receive child tax, seasonal income, cash income, contract work, EI, assistance, or multiple income sources.',
+        notSure: 'Tell us how you are paid — for example, “I work part time,” “I just started a job,” or “my income changes every month.”'
+      },
+      budget: {
+        other: 'Example: I have a down payment, trade-in, or I want to stay under a specific monthly amount.',
+        notSure: 'Tell us what feels comfortable — for example, “I want the lowest payment possible,” “I can do around $500/month,” or “I need help figuring out a budget.”'
+      }
+    };
+
+    const groupExamples = examples[groupName] || {};
+
     if (v === 'other' || v.includes('other')) {
       return {
         key: 'other',
-        label: 'Tell us more',
-        placeholder: 'Example: I am looking for a camper, motorcycle, work van, luxury vehicle, or something specific.'
+        label: group === 'incometype' ? 'Tell us about your income' : group === 'vehicletype' ? 'Tell us what you are looking for' : 'Tell us more',
+        placeholder: groupExamples.other || 'Example: Tell us the details that best explain your situation.'
       };
     }
+
     if (v === 'not sure' || v.includes('not sure')) {
       return {
         key: 'notSure',
-        label: 'Tell us what you are thinking',
-        placeholder: 'Tell us what you are thinking — for example, “I need something reliable for winter” or “I want the lowest payment possible.”'
+        label: group === 'budget' ? 'Tell us what payment feels comfortable' : group === 'creditsituation' ? 'Tell us what you know about your credit' : 'Tell us what you are thinking',
+        placeholder: groupExamples.notSure || 'Tell us what you are thinking so we can guide you better.'
       };
     }
+
     return null;
   }
 
@@ -186,7 +211,7 @@
     if (!step || !name) return;
 
     let wrap = qs(`.funnel-conditional-detail[data-for="${name}"]`, step);
-    const config = conditionalDetailConfig(value);
+    const config = conditionalDetailConfig(value, name);
 
     if (!config) {
       if (wrap) wrap.remove();
