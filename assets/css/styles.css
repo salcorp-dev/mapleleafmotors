@@ -2563,3 +2563,95 @@ label { font-family: var(--font-ui); font-size: 13px; font-weight: 600; color: v
 #homeDeliveryShowcase .delivery-showcase-card.active{display:grid;}
 #homeDeliveryShowcase .delivery-showcase-card:not(.active){display:none;}
 .delivery-showcase-card.delivery-empty{display:grid;}
+
+
+/* v12.6 Header CTA + hero quick-start replacement */
+.nav-links .nav-cta,
+.nav-cta{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:42px;
+  padding:10px 20px !important;
+  border-radius:13px !important;
+  background:linear-gradient(135deg,#dc0632,#b90729) !important;
+  color:#fff !important;
+  font-family:var(--font-ui);
+  font-weight:900;
+  letter-spacing:.01em;
+  text-decoration:none;
+  box-shadow:0 12px 26px rgba(220,6,50,.26);
+  border:1px solid rgba(255,255,255,.18);
+  transition:transform .18s ease, box-shadow .18s ease, filter .18s ease;
+}
+.nav-links .nav-cta:hover,
+.nav-cta:hover{
+  color:#fff !important;
+  transform:translateY(-1px);
+  box-shadow:0 16px 32px rgba(220,6,50,.34);
+  filter:saturate(1.08);
+}
+.lead-promise-card{
+  background:rgba(255,255,255,.97);
+  border:1px solid var(--line);
+  border-radius:18px;
+  padding:18px;
+  box-shadow:var(--shadow-lg);
+  max-width:590px;
+  margin-top:28px;
+}
+.lead-promise-label{
+  font-family:var(--font-ui);
+  font-size:11px;
+  font-weight:900;
+  text-transform:uppercase;
+  letter-spacing:.12em;
+  color:var(--brand);
+  margin-bottom:12px;
+}
+.lead-promise-grid{
+  display:grid;
+  gap:10px;
+}
+.lead-promise-grid div{
+  display:grid;
+  grid-template-columns:190px 1fr;
+  gap:12px;
+  align-items:start;
+  padding:12px;
+  border-radius:14px;
+  background:#f8fafc;
+  border:1px solid #e5e7eb;
+}
+.lead-promise-grid strong{
+  color:var(--ink);
+  font-family:var(--font-ui);
+  font-size:13px;
+}
+.lead-promise-grid span{
+  color:var(--muted);
+  font-family:var(--font-ui);
+  font-size:13px;
+  line-height:1.45;
+}
+.lead-promise-link{
+  display:inline-flex;
+  margin-top:14px;
+  color:var(--brand);
+  font-family:var(--font-ui);
+  font-weight:900;
+  text-decoration:none;
+}
+.lead-promise-link:hover{
+  text-decoration:underline;
+}
+@media(max-width:640px){
+  .lead-promise-grid div{
+    grid-template-columns:1fr;
+    gap:4px;
+  }
+  .nav-links .nav-cta,
+  .nav-cta{
+    width:100%;
+  }
+}

@@ -58,21 +58,23 @@
         <span>Fast follow-up</span>
       </div>
 
-      <div class="quick-search">
-        <div class="quick-search-label">Quick Start</div>
-        <div class="search-row">
-          <input id="heroSearch" placeholder="SUV, truck, sedan, family vehicle…">
-          <select id="heroBudget">
-            <option value="">Any budget</option>
-            <option value="20000">Under $20,000</option>
-            <option value="30000">Under $30,000</option>
-            <option value="40000">Under $40,000</option>
-          </select>
+      <div class="lead-promise-card">
+        <div class="lead-promise-label">Canada-wide matching</div>
+        <div class="lead-promise-grid">
+          <div>
+            <strong>1. Tell us what you need</strong>
+            <span>Car, SUV, truck, boat, camper, motorcycle, or more.</span>
+          </div>
+          <div>
+            <strong>2. We review your situation</strong>
+            <span>Budget, province, credit situation, and timing.</span>
+          </div>
+          <div>
+            <strong>3. We follow up with options</strong>
+            <span>Realistic matches based on availability and lender requirements.</span>
+          </div>
         </div>
-        <div class="search-row-bottom">
-          <p class="muted" style="font-size:12px;font-family:var(--font-ui);margin:0;line-height:1.5;">Good credit · bad credit · new to Canada · self-employed · pension income</p>
-          <a class="btn btn-dark" id="heroSearchBtn" href="financing.html#approval">Start Matching</a>
-        </div>
+        <a class="lead-promise-link" href="financing.html#approval">Start your matching request →</a>
       </div>
     </div>
 
@@ -477,21 +479,6 @@
 })();
 </script>
 
-<script>
-// Hero search sends visitors into the matching funnel with useful context.
-document.getElementById('heroSearchBtn').addEventListener('click', function(e) {
-  const q = document.getElementById('heroSearch').value.trim();
-  const budget = document.getElementById('heroBudget').value;
-  const params = new URLSearchParams();
-  if (q) params.set('search', q);
-  if (budget) params.set('budgetMax', budget);
-  const qs = params.toString();
-  window.location.href = 'financing.html' + (qs ? '?' + qs : '') + '#approval';
-  e.preventDefault();
-});
-document.getElementById('heroSearch').addEventListener('keypress', function(e) {
-  if (e.key === 'Enter') document.getElementById('heroSearchBtn').click();
-});
-</script>
+
 </body>
 </html>
