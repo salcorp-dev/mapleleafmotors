@@ -2708,3 +2708,16 @@ label { font-family: var(--font-ui); font-size: 13px; font-weight: 600; color: v
   from{opacity:0;transform:translateY(-4px)}
   to{opacity:1;transform:translateY(0)}
 }
+
+
+/* v12.10 Required conditional explanation */
+.funnel-conditional-detail textarea:required{
+  border-color:#d1d5db;
+}
+.funnel-conditional-detail textarea:required:focus{
+  border-color:var(--brand);
+}
+.funnel-conditional-detail span::after{
+  content:" *";
+  color:var(--brand);
+}

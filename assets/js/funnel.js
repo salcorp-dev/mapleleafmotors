@@ -57,7 +57,11 @@
         }
       } else if (!String(field.value || '').trim()) {
         if (showMessages) {
-          showError('Please complete the required fields.');
+          if (field.closest('.funnel-conditional-detail')) {
+            showError('Please add a short explanation before continuing.');
+          } else {
+            showError('Please complete the required fields.');
+          }
           field.focus();
         }
         return false;
@@ -229,7 +233,7 @@
     wrap.innerHTML = `
       <label>
         <span>${config.label}</span>
-        <textarea name="${fieldName}" rows="3" placeholder="${config.placeholder}">${funnelState[fieldName] || ''}</textarea>
+        <textarea name="${fieldName}" rows="3" required placeholder="${config.placeholder}">${funnelState[fieldName] || ''}</textarea>
       </label>
     `;
 
