@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4a0f18"/>
+      <stop offset="1" stop-color="#020617"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="72%" cy="35%" r="55%">
+      <stop offset="0" stop-color="#dc0632" stop-opacity=".45"/>
+      <stop offset=".55" stop-color="#dc0632" stop-opacity=".12"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="26" stdDeviation="28" flood-color="#000000" flood-opacity=".45"/>
+    </filter>
+  </defs>
+  <rect width="1600" height="1000" fill="url(#bg)"/>
+  <rect width="1600" height="1000" fill="url(#glow)"/>
+  <path d="M0 780 C260 680 420 820 700 735 C980 650 1140 720 1600 585 L1600 1000 L0 1000 Z" fill="#05070d" opacity=".62"/>
+  <g filter="url(#shadow)" opacity=".96">
+<g transform="translate(210 395)">
+  <path d="M110 260 L170 140 C195 90 250 65 335 65 L520 65 C595 65 655 95 700 155 L760 245 L1060 245 C1115 245 1155 285 1155 340 L1155 420 L70 420 L70 320 C70 290 85 270 110 260Z" fill="#f8fafc"/>
+  <path d="M300 105 L515 105 C575 105 620 130 657 185 L230 185 L252 132 C262 112 278 105 300 105Z" fill="#111827"/>
+  <rect x="760" y="275" width="330" height="72" rx="8" fill="#e2e8f0"/>
+  <path d="M135 295 L690 295" stroke="#cbd5e1" stroke-width="20" stroke-linecap="round" opacity=".75"/>
+  <rect x="110" y="325" width="100" height="45" rx="15" fill="#dc0632"/>
+  <rect x="1045" y="315" width="95" height="36" rx="16" fill="#fde68a"/>
+  <circle cx="305" cy="425" r="86" fill="#020617"/>
+  <circle cx="305" cy="425" r="40" fill="#94a3b8"/>
+  <circle cx="880" cy="425" r="86" fill="#020617"/>
+  <circle cx="880" cy="425" r="40" fill="#94a3b8"/>
+</g></g>
+  <text x="90" y="115" font-family="Arial, Helvetica, sans-serif" font-size="38" font-weight="900" fill="#ffffff" opacity=".18" letter-spacing="6">TRUCKS</text>
+  <text x="90" y="165" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700" fill="#ffffff" opacity=".12" letter-spacing="3">WORK • PICKUP • 4X4</text>
+</svg>

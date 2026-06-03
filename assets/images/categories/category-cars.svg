@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#061b1b"/>
+      <stop offset="1" stop-color="#020617"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="72%" cy="35%" r="55%">
+      <stop offset="0" stop-color="#dc0632" stop-opacity=".45"/>
+      <stop offset=".55" stop-color="#dc0632" stop-opacity=".12"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="26" stdDeviation="28" flood-color="#000000" flood-opacity=".45"/>
+    </filter>
+  </defs>
+  <rect width="1600" height="1000" fill="url(#bg)"/>
+  <rect width="1600" height="1000" fill="url(#glow)"/>
+  <path d="M0 780 C260 680 420 820 700 735 C980 650 1140 720 1600 585 L1600 1000 L0 1000 Z" fill="#05070d" opacity=".62"/>
+  <g filter="url(#shadow)" opacity=".96">
+<g transform="translate(280 425)">
+  <path d="M110 220 C160 120 235 78 365 78 L560 78 C670 78 755 125 815 220 L945 240 C1005 250 1040 295 1040 350 L1040 390 L40 390 L40 340 C40 275 75 235 110 220Z" fill="#f8fafc"/>
+  <path d="M235 205 C280 125 340 110 435 110 L555 110 C640 110 700 135 755 205Z" fill="#111827"/>
+  <path d="M120 250 L900 250" stroke="#cbd5e1" stroke-width="18" stroke-linecap="round" opacity=".75"/>
+  <circle cx="245" cy="395" r="76" fill="#020617"/>
+  <circle cx="245" cy="395" r="36" fill="#94a3b8"/>
+  <circle cx="800" cy="395" r="76" fill="#020617"/>
+  <circle cx="800" cy="395" r="36" fill="#94a3b8"/>
+  <path d="M55 330 L150 315" stroke="#dc0632" stroke-width="24" stroke-linecap="round"/>
+  <path d="M930 320 L1015 325" stroke="#fde68a" stroke-width="20" stroke-linecap="round"/>
+</g></g>
+  <text x="90" y="115" font-family="Arial, Helvetica, sans-serif" font-size="38" font-weight="900" fill="#ffffff" opacity=".18" letter-spacing="6">CARS</text>
+  <text x="90" y="165" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700" fill="#ffffff" opacity=".12" letter-spacing="3">SEDANS • HATCHBACKS • COUPES</text>
+</svg>
