@@ -2557,3 +2557,9 @@ label { font-family: var(--font-ui); font-size: 13px; font-weight: 600; color: v
     min-height:380px;
   }
 }
+
+
+/* v12.5 Direct delivery render support */
+#homeDeliveryShowcase .delivery-showcase-card.active{display:grid;}
+#homeDeliveryShowcase .delivery-showcase-card:not(.active){display:none;}
+.delivery-showcase-card.delivery-empty{display:grid;}

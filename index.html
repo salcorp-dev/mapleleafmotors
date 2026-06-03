@@ -327,7 +327,156 @@
   </div>
 </div>
 
-<script src="assets/js/app.js"></script>
+<script src="assets/js/app.js?v=12.5"></script>
+
+<script>
+/* v12.5 Direct Homepage Delivery Renderer - independent fallback */
+(function(){
+  "use strict";
+
+  const CLIENTS_API = "https://maple-leaf-inventory.sal96wpg.workers.dev/clients";
+
+  function qs(s, p=document){ return p.querySelector(s); }
+  function esc(v){
+    return String(v ?? "").replace(/[&<>"']/g, c => ({
+      "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;"
+    }[c]));
+  }
+  function getImages(d){
+    const out = [];
+    const add = value => {
+      if (!value) return;
+      if (Array.isArray(value)) return value.forEach(add);
+      if (typeof value === "object") return add(value.url || value.src || value.image || value.photo || value.imageUrl || value.photoUrl || value.data);
+      const text = String(value).trim();
+      if (text) out.push(text);
+    };
+    add(d.images);
+    add(d.image);
+    add(d.photo);
+    add(d.photoUrl);
+    add(d.imageUrl);
+    add(d.url);
+    add(d.src);
+    return [...new Set(out)];
+  }
+  function isVisible(d){
+    if (!d || typeof d !== "object") return false;
+    const status = String(d.status || "").toLowerCase();
+    return d.archiveHidden !== true && d.archived !== true && status !== "archived";
+  }
+  function fallbackCard(message){
+    return `<article class="delivery-showcase-card active delivery-empty">
+      <div class="delivery-quote-side">
+        <span class="delivery-kicker">Recent Customer Deliveries</span>
+        <h3>Customer delivery photos will appear here.</h3>
+        <blockquote>“${esc(message || "Upload delivery photos and quotes in the admin portal, and they will display in this large homepage proof section.")}”</blockquote>
+        <div class="delivery-actions">
+          <a class="btn" href="financing.html#approval">Start Matching</a>
+          <span>Real delivery proof will rotate here automatically.</span>
+        </div>
+      </div>
+      <div class="delivery-photo-side delivery-placeholder">
+        <div><strong>Delivery Photo</strong><span>Admin uploads appear here</span></div>
+      </div>
+    </article>`;
+  }
+  function card(d, i){
+    const imgs = getImages(d);
+    const img = imgs[0];
+    const quote = d.quote || d.text || "Real customers, real deliveries. Thank you for trusting Maple Leaf Motors.";
+    const client = d.clientName || d.name || "Happy Customer";
+    const vehicle = d.vehicle || d.vehicleName || "Recent Vehicle Delivery";
+    return `<article class="delivery-showcase-card ${i === 0 ? "active" : ""}" data-delivery-card="${i}">
+      <div class="delivery-quote-side">
+        <span class="delivery-kicker">Recent delivery</span>
+        <h3>${esc(vehicle)}</h3>
+        <blockquote>“${esc(quote)}”</blockquote>
+        <div class="delivery-person">
+          <strong>${esc(client)}</strong>
+          <span>${esc(vehicle)}</span>
+        </div>
+        <div class="delivery-actions">
+          <a class="btn" href="financing.html#approval">Start Matching</a>
+          <span>Canada-wide vehicle matching support</span>
+        </div>
+      </div>
+      <div class="delivery-photo-side">
+        <img src="${esc(img)}" alt="${esc(vehicle)} delivery photo" loading="lazy">
+        <div class="delivery-photo-badge">Customer Delivery</div>
+      </div>
+    </article>`;
+  }
+  function activate(showcase, index){
+    const cards = Array.from(showcase.querySelectorAll(".delivery-showcase-card"));
+    const dots = Array.from(showcase.querySelectorAll("[data-delivery-dot]"));
+    if (!cards.length) return;
+    const current = (index + cards.length) % cards.length;
+    cards.forEach((c, i) => c.classList.toggle("active", i === current));
+    dots.forEach((d, i) => d.classList.toggle("active", i === current));
+    showcase.dataset.deliveryIndex = String(current);
+  }
+  function render(items){
+    const showcase = qs("#homeDeliveryShowcase");
+    if (!showcase) return;
+
+    const deliveries = (items || []).filter(d => isVisible(d) && getImages(d).length);
+    if (!deliveries.length) {
+      showcase.innerHTML = fallbackCard("No uploaded delivery photos were returned from the website API yet.");
+      return;
+    }
+
+    const visible = deliveries.slice(0, 10);
+    showcase.innerHTML = `
+      <div class="delivery-showcase-track">
+        ${visible.map(card).join("")}
+      </div>
+      ${visible.length > 1 ? `<div class="delivery-showcase-dots">
+        ${visible.map((_, i) => `<button type="button" class="${i === 0 ? "active" : ""}" data-delivery-dot="${i}" aria-label="Show delivery ${i + 1}"></button>`).join("")}
+      </div>` : ""}`;
+
+    showcase.querySelectorAll("[data-delivery-dot]").forEach(btn => {
+      btn.addEventListener("click", () => activate(showcase, Number(btn.dataset.deliveryDot || 0)));
+    });
+
+    if (visible.length > 1 && !showcase.dataset.deliveryTimerSet) {
+      showcase.dataset.deliveryTimerSet = "1";
+      setInterval(() => {
+        if (document.hidden) return;
+        const next = Number(showcase.dataset.deliveryIndex || 0) + 1;
+        activate(showcase, next);
+      }, 5200);
+    }
+  }
+
+  async function load(){
+    const showcase = qs("#homeDeliveryShowcase");
+    if (!showcase) return;
+
+    try {
+      const cfgRes = await fetch("assets/data/config.json?delivery=125", { cache:"no-store" }).catch(() => null);
+      let url = CLIENTS_API;
+      if (cfgRes && cfgRes.ok) {
+        const cfg = await cfgRes.json().catch(() => ({}));
+        if (cfg.clientsApiUrl) url = cfg.clientsApiUrl;
+      }
+
+      const res = await fetch(url + (url.includes("?") ? "&" : "?") + "fresh=" + Date.now(), { cache:"no-store" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data.error) throw new Error(data.error || "Could not load deliveries");
+      render(Array.isArray(data.deliveries) ? data.deliveries : []);
+    } catch (e) {
+      console.warn("Delivery showcase API failed:", e);
+      render([]);
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", load);
+  setTimeout(load, 500);
+  setTimeout(load, 1800);
+})();
+</script>
+
 <script>
 // Hero search sends visitors into the matching funnel with useful context.
 document.getElementById('heroSearchBtn').addEventListener('click', function(e) {
