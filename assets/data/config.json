@@ -1,6 +1,6 @@
 {
   "inventoryApiUrl": "https://maple-leaf-inventory.sal96wpg.workers.dev/inventory",
-  "notes": "v11 lead-funnel reposition: public site uses vehicle examples, client delivery slideshow, saved calculator biweekly, and Canada-wide lead funnel.",
+  "notes": "v11.1 homepage-only categories, no public inventory/clients nav pages, phone 204-509-2668.",
   "clientsApiUrl": "https://maple-leaf-inventory.sal96wpg.workers.dev/clients",
   "adminApiUrl": "https://maple-leaf-inventory.sal96wpg.workers.dev/admin",
   "leadsApiUrl": "https://maple-leaf-inventory.sal96wpg.workers.dev/leads"

@@ -145,7 +145,7 @@ function vehicleCard(v) {
       </div>
       <p class="vehicle-example-note">${disclaimerText()}</p>
       <div class="vehicle-actions">
-        <a class="btn btn-outline btn-sm" href="inventory.html">View Examples</a>
+        <a class="btn btn-outline btn-sm" href="financing.html#approval">Start Approval</a>
         <a class="btn btn-sm" href="financing.html#approval">Get Matched</a>
       </div>
     </div>
@@ -177,7 +177,7 @@ function clientSlideCard(d) {
       <span class="pill">Recent delivery</span>
       <h3>${esc(d.vehicle || 'Happy Customer Delivery')}</h3>
       <p>${esc(d.quote || 'Real customers, real deliveries. Thank you for trusting Maple Leaf Motors.')}</p>
-      <a class="btn btn-sm" href="clients.html">View Our Clients</a>
+      <a class="btn btn-sm" href="financing.html#approval">View Our Clients</a>
     </div>
   </div>`;
 }
@@ -192,20 +192,20 @@ function renderHomepageNavigationPreview(d, inv) {
       <strong>Check your options</strong>
       <small>Fast Canada-wide approval request.</small>
     </a>
-    <a class="home-nav-card" href="inventory.html">
-      <span>Vehicle Examples</span>
-      <strong>Cars, SUVs & trucks</strong>
-      <small>Example photos only. We match based on availability.</small>
+    <a class="home-nav-card" href="financing.html#approval?type=car">
+      <span>Cars</span>
+      <strong>Sedans & hatchbacks</strong>
+      <small>Commuter cars, budget-friendly options, and daily drivers.</small>
     </a>
-    <a class="home-nav-card" href="clients.html">
-      <span>Our Clients</span>
-      <strong>Recent deliveries</strong>
-      <small>Real delivery photos and customer proof.</small>
+    <a class="home-nav-card" href="financing.html#approval?type=suv">
+      <span>SUVs</span>
+      <strong>Family SUVs</strong>
+      <small>AWD, family space, crossovers, and larger options.</small>
     </a>
-    <a class="home-nav-card" href="locations.html">
-      <span>Canada-Wide</span>
-      <strong>Multiple provinces</strong>
-      <small>Support across Canada and delivery options.</small>
+    <a class="home-nav-card" href="financing.html#approval?type=truck">
+      <span>Trucks</span>
+      <strong>Pickup options</strong>
+      <small>4x4, work trucks, towing, and larger vehicle options.</small>
     </a>
     <a class="home-nav-card" href="contact.html">
       <span>Contact</span>
@@ -216,21 +216,15 @@ function renderHomepageNavigationPreview(d, inv) {
   const clientSlides = $('#homeClientSlideshow');
   if (clientSlides) {
     const deliveries = (d.deliveries || []).filter(x => x.archiveHidden !== true && Array.isArray(x.images) && x.images.length);
-    clientSlides.innerHTML = deliveries.length ? deliveries.slice(0, 8).map(clientSlideCard).join('') :
+    clientSlides.innerHTML = deliveries.length ? deliveries.slice(0, 10).map(clientSlideCard).join('') :
       `<div class="client-slide-card client-slide-empty">
         <div class="client-slide-copy">
           <span class="pill">Our Clients</span>
           <h3>Customer delivery photos will appear here.</h3>
           <p>Upload delivery photos in admin and they will rotate on the homepage.</p>
-          <a class="btn btn-sm" href="clients.html">View Our Clients</a>
+          <a class="btn btn-sm" href="financing.html#approval">Start Approval</a>
         </div>
       </div>`;
-  }
-
-  const vehicleSlides = $('#homeVehicleSlideshow');
-  if (vehicleSlides) {
-    vehicleSlides.innerHTML = inv.length ? inv.slice(0, 8).map(heroCarCard).join('') :
-      `<div class="hero-car"><div class="hero-car-body"><span class="pill pill-dark">Vehicle Examples</span><h3>Examples will appear here.</h3><div class="hero-car-meta">Upload example vehicles/images in admin.</div><a class="btn btn-sm" href="financing.html#approval">Start Approval →</a></div></div>`;
   }
 }
 
@@ -333,7 +327,7 @@ async function renderInventory() {
     if (countEl) countEl.innerHTML = `<strong>${data.length}</strong> example${data.length !== 1 ? 's' : ''} shown`;
 
     grid.innerHTML = data.map(v => vehicleCard(v)).join('') ||
-      `<div class="no-results"><h3>No examples found</h3><p>Try adjusting your filters or start an approval request and we will match vehicles for you.</p><a class="btn" href="inventory.html">Reset Examples</a></div>`;
+      `<div class="no-results"><h3>No examples found</h3><p>Try adjusting your filters or start an approval request and we will match vehicles for you.</p><a class="btn" href="financing.html#approval">Reset Examples</a></div>`;
   }
 
   ['searchInput', 'makeFilter', 'bodyFilter', 'priceFilter', 'sortFilter'].forEach(id => {
@@ -384,7 +378,7 @@ async function renderVehicle() {
     $('#vehicleDetail').innerHTML = `<div class="card" style="padding:40px;text-align:center;">
       <h2>Vehicle Not Found</h2>
       <p class="lead" style="margin:16px 0 24px;">This vehicle may have been removed or sold.</p>
-      <a class="btn" href="inventory.html">← Back to Inventory</a>
+      <a class="btn" href="financing.html#approval">← Back to Inventory</a>
     </div>`;
     return;
   }
@@ -410,7 +404,7 @@ async function renderVehicle() {
     <div class="vehicle-breadcrumb">
       <a href="index.html">Home</a>
       <span>›</span>
-      <a href="inventory.html">Inventory</a>
+      <a href="financing.html#approval">Inventory</a>
       <span>›</span>
       <span style="color:var(--ink);">${title(v)}</span>
     </div>
@@ -469,8 +463,8 @@ async function renderVehicle() {
 
         <div class="cta-stack">
           <a class="btn btn-full btn-lg" href="financing.html?vehicle=${encodeURIComponent(v.id)}#approval">Start Approval →</a>
-          <a class="btn btn-full btn-outline" href="tel:12049630348">📞 Call (204) 963-0348</a>
-          <a class="btn btn-ghost btn-full" href="inventory.html" style="text-align:center;">← Back to Inventory</a>
+          <a class="btn btn-full btn-outline" href="tel:12045092668">📞 Call 204-509-2668</a>
+          <a class="btn btn-ghost btn-full" href="financing.html#approval" style="text-align:center;">← Back to Inventory</a>
         </div>
         <p class="cta-note">No sensitive info collected · All credit situations welcome</p>
       </aside>
@@ -615,7 +609,7 @@ function wizard() {
       <div style="font-size:48px;margin-bottom:20px;">✅</div>
       <h2>Request Received</h2>
       <p class="lead" style="margin:14px 0 28px;">A Maple Leaf Motors specialist will contact you shortly to discuss your options.</p>
-      <a class="btn btn-lg" href="inventory.html">Browse Inventory →</a>
+      <a class="btn btn-lg" href="financing.html#approval">Browse Inventory →</a>
     </div>`;
   };
 

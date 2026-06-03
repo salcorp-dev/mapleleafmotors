@@ -185,7 +185,7 @@
       if (form) form.style.display = 'none';
       if (success) success.classList.add('active');
     } catch (err) {
-      showError('Could not submit right now. Please call or text Maple Leaf Motors at (204) 963-0348, or try again shortly.');
+      showError('Could not submit right now. Please call or text Maple Leaf Motors at 204-509-2668, or try again shortly.');
       console.error(err);
     } finally {
       if (submit) {
