@@ -2040,3 +2040,45 @@ label { font-family: var(--font-ui); font-size: 13px; font-weight: 600; color: v
 /* v10.18 saved-only payment display */
 .final-biweekly-payment{display:none!important;}
 .payment-est strong,.price-monthly strong{font-weight:900;}
+
+
+/* v11 Lead Funnel + Vehicle Examples */
+.section-sub{margin:8px 0 0;color:var(--muted);font-family:var(--font-ui);max-width:760px;line-height:1.6}
+.legal-note{margin:14px 0 0;color:var(--muted);font-family:var(--font-ui);font-size:12px;line-height:1.55}
+.disclosure-section{padding-top:0}
+.disclosure-card{border:1px solid var(--line);border-radius:18px;background:#fff;padding:20px;color:var(--muted);font-family:var(--font-ui);line-height:1.6}
+.disclosure-card strong{display:block;color:var(--ink);margin-bottom:6px}
+.vehicle-example-note{font-family:var(--font-ui);font-size:11px;line-height:1.45;color:var(--muted);margin:8px 0 0}
+.home-nav-preview{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;margin-bottom:22px}
+.home-nav-card{display:block;padding:18px;border-radius:18px;border:1px solid var(--line);background:#fff;text-decoration:none;box-shadow:var(--shadow-soft);transition:.2s ease}
+.home-nav-card:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+.home-nav-card span{display:block;font-family:var(--font-ui);font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--brand);font-weight:900;margin-bottom:8px}
+.home-nav-card strong{display:block;color:var(--ink);font-size:18px;margin-bottom:6px}
+.home-nav-card small{display:block;color:var(--muted);font-family:var(--font-ui);line-height:1.5}
+.home-preview-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.home-preview-panel{border:1px solid var(--line);border-radius:24px;background:#fff;padding:20px;box-shadow:var(--shadow-soft);overflow:hidden}
+.panel-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:16px}
+.panel-head h3{margin:4px 0 0}
+.panel-head a{font-family:var(--font-ui);font-weight:800;color:var(--brand);text-decoration:none}
+.client-slideshow,.vehicle-slideshow{display:flex;gap:16px;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:8px}
+.client-slideshow>*,
+.vehicle-slideshow>*{flex:0 0 82%;scroll-snap-align:start}
+.client-slide-card{position:relative;min-height:360px;border-radius:20px;overflow:hidden;background:#0b1020;color:#fff}
+.client-slide-card img{width:100%;height:360px;object-fit:cover;display:block;opacity:.86}
+.client-slide-card:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 30%,rgba(0,0,0,.72))}
+.client-slide-copy{position:absolute;left:18px;right:18px;bottom:18px;z-index:2}
+.client-slide-copy h3{color:#fff;margin:10px 0 6px}
+.client-slide-copy p{color:rgba(255,255,255,.86);font-family:var(--font-ui);line-height:1.5}
+.client-slide-empty{display:flex;align-items:flex-end;background:linear-gradient(135deg,#111827,#991b1b)}
+.client-slide-empty:after{display:none}
+.vehicle-slideshow .hero-car{min-height:360px}
+.vehicle-slideshow .hero-car-img-wrap img{height:220px;object-fit:cover}
+@media(max-width:980px){
+  .home-nav-preview{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .home-preview-grid{grid-template-columns:1fr}
+}
+@media(max-width:640px){
+  .home-nav-preview{grid-template-columns:1fr}
+  .client-slideshow>*,
+  .vehicle-slideshow>*{flex-basis:92%}
+}

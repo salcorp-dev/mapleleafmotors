@@ -1,6 +1,6 @@
 {
   "inventoryApiUrl": "https://maple-leaf-inventory.sal96wpg.workers.dev/inventory",
-  "notes": "Live Cloudflare Worker inventory, client uploads, admin auth, finance lead funnel, optional email notifications, and live admin inventory management for Maple Leaf Motors.",
+  "notes": "v11 lead-funnel reposition: public site uses vehicle examples, client delivery slideshow, saved calculator biweekly, and Canada-wide lead funnel.",
   "clientsApiUrl": "https://maple-leaf-inventory.sal96wpg.workers.dev/clients",
   "adminApiUrl": "https://maple-leaf-inventory.sal96wpg.workers.dev/admin",
   "leadsApiUrl": "https://maple-leaf-inventory.sal96wpg.workers.dev/leads"

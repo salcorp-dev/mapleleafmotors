@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Maple Leaf Motors | Used Vehicles & Auto Financing Winnipeg</title>
-<meta name="description" content="Browse inventory and start approval with Maple Leaf Motors in Winnipeg. Vehicle financing for all credit situations across Canada.">
+<title>Maple Leaf Motors | Canada-Wide Vehicle Financing & Matching</title>
+<meta name="description" content="Canada-wide vehicle financing and vehicle matching support through Maple Leaf Motors. Start approval, view example vehicles, and see real customer deliveries.">
 <meta name="keywords" content="used cars Winnipeg, car financing Canada, bad credit car loan, vehicle financing Winnipeg, cosigner car loan, new to Canada car loan">
 <meta property="og:title" content="Maple Leaf Motors | Used Vehicles & Auto Financing Winnipeg">
-<meta property="og:description" content="Browse inventory and start approval with Maple Leaf Motors in Winnipeg. Vehicle financing for all credit situations across Canada.">
+<meta property="og:description" content="Canada-wide vehicle financing and vehicle matching support through Maple Leaf Motors. Start approval, view example vehicles, and see real customer deliveries.">
 <link rel="stylesheet" href="assets/css/styles.css">
 <link rel="icon" href="assets/images/maple-leaf-motors-logo.png">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"AutoDealer","name":"Maple Leaf Motors","telephone":"+1-204-963-0348","email":"mapleleaf_motors@outlook.com","address":{"@type":"PostalAddress","streetAddress":"611 Corydon Ave","addressLocality":"Winnipeg","addressRegion":"MB","postalCode":"R3L 0P3","addressCountry":"CA"},"openingHours":"Mo-Su 09:00-21:00"}</script>
@@ -21,14 +21,14 @@
       <img src="assets/images/maple-leaf-motors-logo.png" alt="Maple Leaf Motors">
       <div class="brand-text">
         <span class="brand-name">Maple Leaf Motors</span>
-        <span class="brand-sub">Winnipeg Auto Brokerage</span>
+        <span class="brand-sub">Canada-Wide Vehicle Matching</span>
       </div>
     </a>
     <button class="menu-btn" id="mobileToggle">☰ Menu</button>
     <div class="nav-links" id="navLinks">
       <a class="active" href="index.html">Home</a>
-      <a href="inventory.html">Inventory</a>
-      <a href="financing.html">Financing</a>
+      <a href="inventory.html">Vehicle Examples</a>
+      <a href="financing.html">Get Approved</a>
       <a href="clients.html">Our Clients</a>
       <a href="locations.html">Locations</a>
       <a href="contact.html">Contact</a>
@@ -44,12 +44,12 @@
   <div class="container hero-grid">
     <!-- Left copy -->
     <div class="hero-copy">
-      <div class="eyebrow">Winnipeg Auto Brokerage · Canada-wide</div>
-      <h1>Find Your Next Vehicle</h1>
-      <p class="lead">Browse inventory, see payment estimates, and start an approval request — all online, no pressure.</p>
+      <div class="eyebrow">Canada-Wide Vehicle Matching · Canada-wide</div>
+      <h1>Get Matched With the Right Vehicle Canada-Wide</h1>
+      <p class="lead">Tell us what you need and we’ll help match you with vehicle options through our dealer network and financing partners. No full vehicle examples claims, no pressure.</p>
       <div class="hero-actions">
         <a class="btn btn-lg" href="financing.html#approval">Start Approval →</a>
-        <a class="btn btn-outline btn-sm" href="inventory.html">Browse Inventory</a>
+        <a class="btn btn-outline btn-sm" href="inventory.html">View Vehicle Examples</a>
       </div>
       <div class="hero-trust">
         <span>All credit welcome</span>
@@ -64,7 +64,7 @@
       <div class="quick-search">
         <div class="quick-search-label">Quick Search</div>
         <div class="search-row">
-          <input id="heroSearch" placeholder="Search SUV, truck, sedan…">
+          <input id="heroSearch" placeholder="SUV, truck, sedan, family vehicle…">
           <select id="heroBudget">
             <option value="">Any budget</option>
             <option value="20000">Under $20,000</option>
@@ -74,7 +74,7 @@
         </div>
         <div class="search-row-bottom">
           <p class="muted" style="font-size:12px;font-family:var(--font-ui);margin:0;line-height:1.5;">Good credit · Bad credit · New to Canada · Self-employed · Pension · Bankruptcy · Consumer proposal</p>
-          <a class="btn btn-dark" id="heroSearchBtn" href="inventory.html">Search</a>
+          <a class="btn btn-dark" id="heroSearchBtn" href="financing.html#approval">Start Matching</a>
         </div>
       </div>
     </div>
@@ -96,31 +96,72 @@
         </div>
         <div class="approval-steps">
           <div><b>1</b><span>Your situation</span></div>
-          <div><b>2</b><span>Match vehicles</span></div>
+          <div><b>2</b><span>Match vehicle types</span></div>
           <div><b>3</b><span>Review options</span></div>
           <div><b>4</b><span>Pickup or delivery</span></div>
         </div>
       </div>
       <div class="approval-card-actions">
         <a class="btn" href="financing.html#approval">Start Approval →</a>
-        <a class="approval-card-link" href="inventory.html">Browse inventory</a>
+        <a class="approval-card-link" href="inventory.html">View examples</a>
       </div>
     </div>
   </div>
 </header>
 
-<!-- FEATURED INVENTORY -->
+<!-- VEHICLE EXAMPLES -->
 <section class="section" style="padding-top:48px;">
   <div class="container">
     <div class="section-head">
       <div class="section-head-left">
-        <div class="eyebrow">Live Inventory</div>
-        <h2>Recently Added Inventory</h2>
-        <span class="remote-status" id="remoteInventoryStatus" style="display:none;">Live inventory</span>
+        <div class="eyebrow">Vehicle Examples</div>
+        <h2>Examples of vehicles we can help source</h2>
+        <p class="section-sub">These are example vehicle types only. We match customers with available options through dealer/partner vehicle examples based on approval, location, and budget.</p>
+        <span class="remote-status" id="remoteInventoryStatus" style="display:none;">Example feed connected</span>
       </div>
-      <a class="btn btn-outline" href="inventory.html">View All Vehicles →</a>
+      <a class="btn btn-outline" href="financing.html#approval">Get Matched →</a>
     </div>
-    <div id="featuredInventory" class="inventory-scroll"></div>
+    <div id="featuredInventory" class="vehicle examples-scroll"></div>
+    <p class="legal-note">Vehicle photos are examples only. Availability, pricing, payments, and approvals vary. Approval is subject to lender requirements.</p>
+  </div>
+</section>
+
+<!-- HOMEPAGE NAV PREVIEW -->
+<section class="section home-preview-section" style="padding-top:0;">
+  <div class="container">
+    <div class="section-head">
+      <div class="section-head-left">
+        <div class="eyebrow">Explore Maple Leaf Motors</div>
+        <h2>Everything customers need before applying</h2>
+        <p class="section-sub">Quick previews of the main sections on the website.</p>
+      </div>
+    </div>
+
+    <div id="homeNavPreview" class="home-nav-preview"></div>
+
+    <div class="home-preview-grid">
+      <div class="home-preview-panel">
+        <div class="panel-head">
+          <div>
+            <div class="eyebrow">Our Clients</div>
+            <h3>Recent customer deliveries</h3>
+          </div>
+          <a href="clients.html">View all →</a>
+        </div>
+        <div id="homeClientSlideshow" class="client-slideshow"></div>
+      </div>
+
+      <div class="home-preview-panel">
+        <div class="panel-head">
+          <div>
+            <div class="eyebrow">Vehicle Examples</div>
+            <h3>Cars, SUVs and trucks</h3>
+          </div>
+          <a href="inventory.html">View examples →</a>
+        </div>
+        <div id="homeVehicleSlideshow" class="vehicle-slideshow"></div>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -130,8 +171,8 @@
     <div class="approval-band">
       <div style="position:relative;z-index:1;">
         <div class="eyebrow">Financing Support</div>
-        <h2>Start with the vehicle. We'll help with the financing.</h2>
-        <p class="lead">Maple Leaf Motors works with buyers in all financial situations. Pick a vehicle you like, then start an approval request — fast, no-pressure.</p>
+        <h2>Start with your situation. We'll help match the vehicle.</h2>
+        <p class="lead">Maple Leaf Motors works with buyers in all financial situations. Tell us your budget, province, and vehicle type — then we help match realistic options.</p>
         <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:4px;">
           <a class="btn" href="financing.html#approval">Start Approval →</a>
           <a class="btn btn-outline-white" href="tel:12049630348">Call (204) 963-0348</a>
@@ -163,8 +204,8 @@
         <div class="feature-icon">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><circle cx="12" cy="14" r="2"/></svg>
         </div>
-        <h3>Inventory First</h3>
-        <p>Browse vehicles and see real prices before starting any approval process. No surprises.</p>
+        <h3>Vehicle Matching First</h3>
+        <p>See example vehicle types, then let us match available options that fit your budget and approval profile.</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon">
@@ -204,6 +245,16 @@
   </div>
 </section>
 
+<!-- DISCLOSURE -->
+<section class="section disclosure-section">
+  <div class="container">
+    <div class="disclosure-card">
+      <strong>Website disclosure</strong>
+      <p>Maple Leaf Motors helps customers explore vehicle financing and vehicle matching options. Vehicle photos and examples shown on this website may be examples only and do not guarantee availability. Final vehicle selection, pricing, financing, and delivery are subject to lender approval, dealer availability, province, credit profile, income, down payment, and applicable taxes/fees.</p>
+    </div>
+  </div>
+</section>
+
 <!-- SEO HIDDEN -->
 <section class="seo-hidden">
   <h2>Vehicle Financing Across Canada</h2>
@@ -216,13 +267,13 @@
     <div class="footer-grid">
       <div>
         <div class="footer-brand-name">Maple Leaf Motors</div>
-        <p class="footer-desc">Winnipeg-based auto brokerage helping Canadians find and finance vehicles — regardless of credit situation.</p>
+        <p class="footer-desc">Winnipeg-based vehicle matching and finance support helping Canadians explore vehicle options through dealer and financing partners.</p>
       </div>
       <div>
         <h4>Explore</h4>
         <ul class="footer-links">
-          <li><a href="inventory.html">Browse Inventory</a></li>
-          <li><a href="financing.html">Financing</a></li>
+          <li><a href="inventory.html">View Vehicle Examples</a></li>
+          <li><a href="financing.html">Get Approved</a></li>
           <li><a href="clients.html">Our Clients</a></li>
           <li><a href="locations.html">Service Areas</a></li>
           <li><a href="contact.html">Contact Us</a></li>
@@ -243,7 +294,7 @@
           <li><a href="tel:12049630348" class="footer-phone-link">(204) 963-0348</a></li>
           <li><a href="mailto:mapleleaf_motors@outlook.com">mapleleaf_motors@outlook.com</a></li>
           <li>611 Corydon Ave<br>Winnipeg, MB R3L 0P3</li>
-          <li>Open 9 AM – 9 PM, 7 days</li>
+          <li>Canada-wide support · 9 AM – 9 PM</li>
         </ul>
       </div>
     </div>
@@ -258,14 +309,14 @@
 <div class="sticky-mobile">
   <div class="sticky-bar">
     <a href="tel:12049630348">Call Us</a>
-    <a href="inventory.html">Inventory</a>
+    <a href="inventory.html">Vehicle Examples</a>
     <a class="primary" href="financing.html#approval">Start Approval →</a>
   </div>
 </div>
 
 <script src="assets/js/app.js"></script>
 <script>
-// Hero search → inventory with params
+// Hero search → vehicle examples with params
 document.getElementById('heroSearchBtn').addEventListener('click', function(e) {
   const q = document.getElementById('heroSearch').value.trim();
   const budget = document.getElementById('heroBudget').value;

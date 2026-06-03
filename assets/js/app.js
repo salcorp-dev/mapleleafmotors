@@ -8,20 +8,20 @@ async function loadConfig() {
     const res = await fetch('assets/data/config.json', { cache: 'no-store' });
     if (!res.ok) throw new Error('No config');
     const config = await res.json();
-    return { inventoryApiUrl: config.inventoryApiUrl || LIVE_INVENTORY_API };
+    return { inventoryApiUrl: config.inventoryApiUrl || LIVE_INVENTORY_API, clientsApiUrl: config.clientsApiUrl || 'https://maple-leaf-inventory.sal96wpg.workers.dev/clients' };
   } catch (e) {
     return { inventoryApiUrl: LIVE_INVENTORY_API };
   }
 }
 
 async function siteData() {
-  let fallback = { inventory: [], testimonials: [] };
+  let fallback = { inventory: [], testimonials: [], deliveries: [] };
 
   try {
     const res = await fetch('assets/data/site-data.json', { cache: 'no-store' });
     if (res.ok) fallback = await res.json();
   } catch (e) {
-    console.warn('Static inventory failed:', e);
+    console.warn('Static site data failed:', e);
   }
 
   const cfg = await loadConfig();
@@ -35,21 +35,34 @@ async function siteData() {
         if (Array.isArray(inventory)) {
           fallback.inventory = inventory;
           fallback.remoteInventory = true;
-          return fallback;
         }
       }
     } catch (e) {
-      console.warn('Remote inventory failed, using fallback inventory:', e);
+      console.warn('Remote vehicle examples failed, using fallback inventory:', e);
+    }
+  }
+
+  if (cfg.clientsApiUrl) {
+    try {
+      const res = await fetch(cfg.clientsApiUrl, { cache: 'no-store' });
+      if (res.ok) {
+        const clients = await res.json();
+        if (Array.isArray(clients.deliveries)) fallback.deliveries = clients.deliveries.filter(x => x.archiveHidden !== true);
+        if (Array.isArray(clients.testimonials)) fallback.testimonials = clients.testimonials.filter(x => x.archiveHidden !== true);
+        fallback.remoteClients = true;
+      }
+    } catch (e) {
+      console.warn('Remote clients failed, using fallback clients:', e);
     }
   }
 
   const local = localStorage.getItem('mlm_site_data');
-  if (local) {
+  if (local && !fallback.inventory.length && !fallback.deliveries.length) {
     try {
       const localData = JSON.parse(local);
       return localData;
     } catch (e) {
-      console.warn('Local storage inventory failed:', e);
+      console.warn('Local storage site data failed:', e);
     }
   }
 
@@ -81,6 +94,27 @@ function image(v) { return images(v)[0] || ''; }
 function km(v) { return Number(v.mileage || v.kilometers || 0); }
 function title(v) { return `${v.year || ''} ${v.make || ''} ${v.model || ''}`.trim(); }
 
+function exampleTitle(v) {
+  const type = v.bodyStyle || v.model || v.make || 'Vehicle';
+  if (/truck/i.test(type) || /ram|f-150|silverado|sierra/i.test(title(v))) return 'Truck Options';
+  if (/suv|utility|escape|rogue|tucson|santa fe|terrain|equinox/i.test(type + ' ' + title(v))) return 'SUV Options';
+  if (/van|caravan|sienna|odyssey/i.test(type + ' ' + title(v))) return 'Family Van Options';
+  if (/luxury|mercedes|bmw|audi|lexus|acura/i.test(title(v))) return 'Luxury Options';
+  return 'Car Options';
+}
+function exampleMeta(v) {
+  const b = biweekly(v);
+  const parts = [];
+  if (b) parts.push(`Est. from $${b.toLocaleString()}/biweekly`);
+  if (v.bodyStyle) parts.push(v.bodyStyle);
+  if (v.drivetrain) parts.push(v.drivetrain);
+  return parts.join(' · ') || 'Payment options vary by approval';
+}
+function disclaimerText() {
+  return 'Example photos only. Availability, exact vehicles, pricing, payments, and approvals vary by lender, dealer availability, province, credit profile, income, down payment, and trade-in.';
+}
+
+
 // ── Navigation ──
 function nav() {
   const b = $('#mobileToggle'), l = $('#navLinks');
@@ -95,29 +129,24 @@ function nav() {
 
 // ── Vehicle Card (grid) ──
 function vehicleCard(v) {
-  const imgs = images(v);
-  const photoCount = imgs.length;
-  return `<article class="vehicle-card">
-    <a href="vehicle.html?id=${encodeURIComponent(v.id)}" class="vehicle-card-img-wrap" style="display:block;">
-      <img src="${image(v)}" alt="${title(v)}" loading="lazy">
+  return `<article class="vehicle-card vehicle-example-card">
+    <a href="financing.html#approval" class="vehicle-card-img-wrap" style="display:block;">
+      <img src="${image(v)}" alt="${exampleTitle(v)}" loading="lazy">
       <div class="vehicle-card-badge">
-        <span class="pill">${v.bodyStyle || 'Vehicle'}</span>
+        <span class="pill">Example only</span>
       </div>
     </a>
     <div class="vehicle-body">
-      <div class="vehicle-title">${title(v)}</div>
-      <div class="vehicle-meta">
-        <span>${km(v).toLocaleString()} km</span>
-        ${v.drivetrain ? `<span class="vehicle-meta-dot">·</span><span>${v.drivetrain}</span>` : ''}
-        ${v.transmission ? `<span class="vehicle-meta-dot">·</span><span>${v.transmission}</span>` : ''}
-      </div>
+      <div class="vehicle-title">${exampleTitle(v)}</div>
+      <div class="vehicle-meta">${exampleMeta(v)}</div>
       <div class="price-block">
-        <div class="price">${money(v.price)}</div>
+        <div class="price">${v.price ? 'From ' + money(v.price) : 'Matched to your budget'}</div>
         ${paymentLine(v)}
       </div>
+      <p class="vehicle-example-note">${disclaimerText()}</p>
       <div class="vehicle-actions">
-        <a class="btn btn-outline btn-sm" href="vehicle.html?id=${encodeURIComponent(v.id)}">View Details</a>
-        <a class="btn btn-sm" href="financing.html?vehicle=${encodeURIComponent(v.id)}#approval">Get Approved</a>
+        <a class="btn btn-outline btn-sm" href="inventory.html">View Examples</a>
+        <a class="btn btn-sm" href="financing.html#approval">Get Matched</a>
       </div>
     </div>
   </article>`;
@@ -126,22 +155,90 @@ function vehicleCard(v) {
 // ── Hero car card ──
 function heroCarCard(v) {
   return `<div class="hero-car">
-    <a href="vehicle.html?id=${encodeURIComponent(v.id)}" class="hero-car-img-wrap" style="display:block;">
-      <img src="${image(v)}" alt="${title(v)}" loading="lazy">
+    <a href="financing.html#approval" class="hero-car-img-wrap" style="display:block;">
+      <img src="${image(v)}" alt="${exampleTitle(v)}" loading="lazy">
     </a>
     <div class="hero-car-body">
-      <span class="pill pill-dark">${v.bodyStyle || 'Vehicle'}</span>
-      <h3>${title(v)}</h3>
-      <div class="hero-car-meta">${km(v).toLocaleString()} km · ${money(v.price)}</div>
-      <a class="btn btn-sm" href="vehicle.html?id=${encodeURIComponent(v.id)}">View Vehicle →</a>
+      <span class="pill pill-dark">Example vehicle type</span>
+      <h3>${exampleTitle(v)}</h3>
+      <div class="hero-car-meta">${exampleMeta(v)}</div>
+      <a class="btn btn-sm" href="financing.html#approval">Get Matched →</a>
     </div>
   </div>`;
+}
+
+
+function clientSlideCard(d) {
+  const imgs = Array.isArray(d.images) ? d.images : [];
+  const img = imgs[0] || 'assets/images/maple-leaf-motors-logo.png';
+  return `<div class="client-slide-card">
+    <img src="${esc(img)}" alt="${esc(d.vehicle || 'Customer delivery')}" loading="lazy">
+    <div class="client-slide-copy">
+      <span class="pill">Recent delivery</span>
+      <h3>${esc(d.vehicle || 'Happy Customer Delivery')}</h3>
+      <p>${esc(d.quote || 'Real customers, real deliveries. Thank you for trusting Maple Leaf Motors.')}</p>
+      <a class="btn btn-sm" href="clients.html">View Our Clients</a>
+    </div>
+  </div>`;
+}
+
+function renderHomepageNavigationPreview(d, inv) {
+  const navPreview = $('#homeNavPreview');
+  if (!navPreview) return;
+
+  navPreview.innerHTML = `
+    <a class="home-nav-card" href="financing.html#approval">
+      <span>Start Approval</span>
+      <strong>Check your options</strong>
+      <small>Fast Canada-wide approval request.</small>
+    </a>
+    <a class="home-nav-card" href="inventory.html">
+      <span>Vehicle Examples</span>
+      <strong>Cars, SUVs & trucks</strong>
+      <small>Example photos only. We match based on availability.</small>
+    </a>
+    <a class="home-nav-card" href="clients.html">
+      <span>Our Clients</span>
+      <strong>Recent deliveries</strong>
+      <small>Real delivery photos and customer proof.</small>
+    </a>
+    <a class="home-nav-card" href="locations.html">
+      <span>Canada-Wide</span>
+      <strong>Multiple provinces</strong>
+      <small>Support across Canada and delivery options.</small>
+    </a>
+    <a class="home-nav-card" href="contact.html">
+      <span>Contact</span>
+      <strong>Talk to our team</strong>
+      <small>Questions before applying? Reach out.</small>
+    </a>`;
+
+  const clientSlides = $('#homeClientSlideshow');
+  if (clientSlides) {
+    const deliveries = (d.deliveries || []).filter(x => x.archiveHidden !== true && Array.isArray(x.images) && x.images.length);
+    clientSlides.innerHTML = deliveries.length ? deliveries.slice(0, 8).map(clientSlideCard).join('') :
+      `<div class="client-slide-card client-slide-empty">
+        <div class="client-slide-copy">
+          <span class="pill">Our Clients</span>
+          <h3>Customer delivery photos will appear here.</h3>
+          <p>Upload delivery photos in admin and they will rotate on the homepage.</p>
+          <a class="btn btn-sm" href="clients.html">View Our Clients</a>
+        </div>
+      </div>`;
+  }
+
+  const vehicleSlides = $('#homeVehicleSlideshow');
+  if (vehicleSlides) {
+    vehicleSlides.innerHTML = inv.length ? inv.slice(0, 8).map(heroCarCard).join('') :
+      `<div class="hero-car"><div class="hero-car-body"><span class="pill pill-dark">Vehicle Examples</span><h3>Examples will appear here.</h3><div class="hero-car-meta">Upload example vehicles/images in admin.</div><a class="btn btn-sm" href="financing.html#approval">Start Approval →</a></div></div>`;
+  }
 }
 
 // ── Render Homepage ──
 async function renderHome() {
   const d = await siteData();
   const inv = (d.inventory || []).filter(v => isPublicVehicle(v) && v.featured !== false);
+  renderHomepageNavigationPreview(d, inv);
 
   // Hero carousel
   const hero = $('#heroInventory');
@@ -233,10 +330,10 @@ async function renderInventory() {
 
     // Count
     const countEl = $('#inventoryCount');
-    if (countEl) countEl.innerHTML = `<strong>${data.length}</strong> vehicle${data.length !== 1 ? 's' : ''} found`;
+    if (countEl) countEl.innerHTML = `<strong>${data.length}</strong> example${data.length !== 1 ? 's' : ''} shown`;
 
     grid.innerHTML = data.map(v => vehicleCard(v)).join('') ||
-      `<div class="no-results"><h3>No vehicles found</h3><p>Try adjusting your search filters to see more results.</p><a class="btn" href="inventory.html">Reset Filters</a></div>`;
+      `<div class="no-results"><h3>No examples found</h3><p>Try adjusting your filters or start an approval request and we will match vehicles for you.</p><a class="btn" href="inventory.html">Reset Examples</a></div>`;
   }
 
   ['searchInput', 'makeFilter', 'bodyFilter', 'priceFilter', 'sortFilter'].forEach(id => {
