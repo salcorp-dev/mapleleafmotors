@@ -2774,3 +2774,45 @@ label { font-family: var(--font-ui); font-size: 13px; font-weight: 600; color: v
   z-index:2;
   text-shadow:0 2px 14px rgba(0,0,0,.28);
 }
+
+
+/* v12.12 Category cards: proper SUV background + bigger red labels */
+.vehicle-category-card.suv{
+  background-image:url("https://images.unsplash.com/photo-1535223289827-42f1e9919769?auto=format&fit=crop&w=1400&q=85") !important;
+}
+.vehicle-category-card span{
+  background:linear-gradient(135deg,#dc0632,#b90729) !important;
+  color:#fff !important;
+  font-size:13px !important;
+  letter-spacing:.12em !important;
+  padding:10px 15px !important;
+  box-shadow:0 12px 28px rgba(220,6,50,.30);
+}
+.vehicle-category-card.more span{
+  background:linear-gradient(135deg,#dc0632,#b90729) !important;
+  color:#fff !important;
+}
+.vehicle-category-card h3{
+  font-size:34px !important;
+  line-height:1.15 !important;
+}
+.vehicle-category-card.car h3,
+.vehicle-category-card.suv h3,
+.vehicle-category-card.truck h3,
+.vehicle-category-card.more h3{
+  color:#fff !important;
+}
+.vehicle-category-card strong{
+  color:#fff !important;
+  font-size:18px !important;
+}
+.vehicle-category-card:before{
+  background:
+    linear-gradient(180deg,rgba(0,0,0,.22),rgba(0,0,0,.88)),
+    linear-gradient(135deg,rgba(82,0,17,.48),rgba(0,0,0,.56)) !important;
+}
+@media(max-width:640px){
+  .vehicle-category-card h3{
+    font-size:29px !important;
+  }
+}
