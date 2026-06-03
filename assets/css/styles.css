@@ -2721,3 +2721,56 @@ label { font-family: var(--font-ui); font-size: 13px; font-weight: 600; color: v
   content:" *";
   color:var(--brand);
 }
+
+
+/* v12.11 Vehicle category HD image backgrounds */
+.vehicle-category-card{
+  background-size:cover !important;
+  background-position:center !important;
+}
+.vehicle-category-card:before{
+  background:
+    linear-gradient(180deg,rgba(0,0,0,.12),rgba(0,0,0,.84)),
+    linear-gradient(135deg,rgba(0,0,0,.28),rgba(0,0,0,.52)) !important;
+  z-index:-1;
+}
+.vehicle-category-card.car{
+  background-image:url("https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?auto=format&fit=crop&w=1400&q=85");
+}
+.vehicle-category-card.suv{
+  background-image:url("https://images.unsplash.com/photo-1542362567-b07e54358753?auto=format&fit=crop&w=1400&q=85");
+}
+.vehicle-category-card.truck{
+  background-image:url("https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=1400&q=85");
+}
+.vehicle-category-card.more{
+  color:#fff !important;
+  background-image:url("https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1400&q=85");
+}
+.vehicle-category-card.more:before{
+  display:block !important;
+  background:
+    linear-gradient(90deg,rgba(0,0,0,.82),rgba(0,0,0,.46)),
+    linear-gradient(180deg,rgba(0,0,0,.08),rgba(0,0,0,.76)) !important;
+}
+.vehicle-category-card.more:after,
+.vehicle-category-card.car:after,
+.vehicle-category-card.suv:after,
+.vehicle-category-card.truck:after{
+  display:none !important;
+}
+.vehicle-category-card.more span{
+  background:rgba(255,255,255,.16) !important;
+  color:#fff !important;
+}
+.vehicle-category-card.more p{
+  color:rgba(255,255,255,.86) !important;
+}
+.vehicle-category-card h3,
+.vehicle-category-card p,
+.vehicle-category-card strong,
+.vehicle-category-card span{
+  position:relative;
+  z-index:2;
+  text-shadow:0 2px 14px rgba(0,0,0,.28);
+}
