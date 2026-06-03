@@ -61,10 +61,10 @@ export default {
         if (auth) {
           try { await requireAdminSession(request, env); isAdmin = true; } catch (e) { isAdmin = false; }
         }
-        if (isAdmin) return json(clients);
+        if (isAdmin) return json(normalizeClients(clients));
         return json({
-          deliveries: clients.deliveries.filter(x => x.archiveHidden !== true),
-          testimonials: clients.testimonials.filter(x => x.archiveHidden !== true)
+          deliveries: clients.deliveries.map(normalizeDelivery).filter(isPublicClientEntry),
+          testimonials: clients.testimonials.filter(isPublicClientEntry)
         });
       }
 
@@ -250,7 +250,12 @@ export default {
         if (contentType.includes("multipart/form-data")) {
           const form = await request.formData();
           vehicle = JSON.parse(form.get("vehicle") || "{}");
-          files = form.getAll("images").filter(Boolean);
+          files = [
+            ...form.getAll("images"),
+            ...form.getAll("image"),
+            ...form.getAll("photos"),
+            ...form.getAll("deliveryImages")
+          ].filter(Boolean);
         } else {
           const body = await request.json();
           vehicle = body.vehicle || body;
@@ -318,7 +323,7 @@ export default {
         if (type === "delivery" || type === "deliveries") {
           if (!files.length && (!Array.isArray(entry.images) || !entry.images.length)) return json({ error: "Please upload at least one delivery image." }, 400);
           entry.id = entry.id || `delivery-${Date.now()}`;
-          entry.images = Array.isArray(entry.images) ? entry.images : [];
+          entry.images = deliveryImages(entry);
 
           for (let i = 0; i < files.length; i++) {
             const file = files[i];
@@ -337,7 +342,7 @@ export default {
             vehicle: entry.vehicle || "",
             quote: entry.quote || "",
             rating: Number(entry.rating || 5),
-            images: entry.images || [],
+            images: deliveryImages(entry),
             createdAt: entry.createdAt || new Date().toISOString(),
             archiveHidden: entry.archiveHidden === true,
             updatedAt: new Date().toISOString()
@@ -455,6 +460,48 @@ async function getClients(env) {
     deliveries: Array.isArray(clients.deliveries) ? clients.deliveries : [],
     testimonials: Array.isArray(clients.testimonials) ? clients.testimonials : []
   };
+}
+
+function normalizeClients(clients) {
+  return {
+    deliveries: (Array.isArray(clients.deliveries) ? clients.deliveries : []).map(normalizeDelivery),
+    testimonials: Array.isArray(clients.testimonials) ? clients.testimonials : []
+  };
+}
+
+function deliveryImages(entry) {
+  if (!entry || typeof entry !== "object") return [];
+  const out = [];
+  const add = value => {
+    if (!value) return;
+    if (Array.isArray(value)) {
+      value.forEach(add);
+      return;
+    }
+    if (typeof value === "object") {
+      add(value.url || value.src || value.data || value.image || value.photo || value.photoUrl || value.imageUrl);
+      return;
+    }
+    const text = String(value || "").trim();
+    if (text) out.push(text);
+  };
+  add(entry.images);
+  add(entry.image);
+  add(entry.photo);
+  add(entry.photoUrl);
+  add(entry.imageUrl);
+  add(entry.url);
+  add(entry.src);
+  return [...new Set(out)];
+}
+
+function normalizeDelivery(entry) {
+  return { ...(entry || {}), images: deliveryImages(entry) };
+}
+
+function isPublicClientEntry(entry) {
+  const status = String(entry?.status || "").toLowerCase();
+  return entry?.archiveHidden !== true && entry?.archived !== true && status !== "archived";
 }
 
 

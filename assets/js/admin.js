@@ -165,6 +165,32 @@ function escapeHtml(value) {
   }[c]));
 }
 
+function deliveryImages(entry) {
+  if (!entry || typeof entry !== 'object') return [];
+  const out = [];
+  const add = value => {
+    if (!value) return;
+    if (Array.isArray(value)) {
+      value.forEach(add);
+      return;
+    }
+    if (typeof value === 'object') {
+      add(value.url || value.src || value.data || value.image || value.photo || value.photoUrl || value.imageUrl);
+      return;
+    }
+    const text = String(value).trim();
+    if (text) out.push(text);
+  };
+  add(entry.images);
+  add(entry.image);
+  add(entry.photo);
+  add(entry.photoUrl);
+  add(entry.imageUrl);
+  add(entry.url);
+  add(entry.src);
+  return [...new Set(out)];
+}
+
 async function fetchClientsFromApi(config) {
   if (!config.clientsApiUrl) return null;
   try {
@@ -613,8 +639,9 @@ async function dashboard() {
       const deliveries = Array.isArray(data.deliveries) ? data.deliveries : [];
       deliveryRows.innerHTML = deliveries.map(d => {
         const archived = d.archiveHidden === true || String(d.status || '').toLowerCase() === 'archived';
-        const photoCount = Array.isArray(d.images) ? d.images.length : 0;
-        const thumb = photoCount ? `<img src="${escapeHtml(d.images[0])}" alt="" style="width:70px;height:44px;object-fit:cover;border-radius:8px;border:1px solid #e5e7eb;">` : '<small>No photo</small>';
+        const images = deliveryImages(d);
+        const photoCount = images.length;
+        const thumb = photoCount ? `<img src="${escapeHtml(images[0])}" alt="" style="width:70px;height:44px;object-fit:cover;border-radius:8px;border:1px solid #e5e7eb;">` : '<small>No photo</small>';
         return `<tr class="${archived ? 'muted-row' : ''}">
           <td><strong>${escapeHtml(d.clientName || 'Happy client')}</strong>${archived ? '<br><small>Archived</small>' : ''}</td>
           <td>${escapeHtml(d.vehicle || '')}<br>${d.quote ? `<small>${escapeHtml(d.quote)}</small>` : ''}</td>

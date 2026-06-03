@@ -183,7 +183,7 @@ function heroCarCard(v) {
 
 
 function clientSlideCard(d) {
-  const imgs = Array.isArray(d.images) ? d.images : [];
+  const imgs = deliveryImages(d);
   const img = imgs[0] || 'assets/images/maple-leaf-motors-logo.png';
   return `<div class="client-slide-card">
     <img src="${esc(img)}" alt="${esc(d.vehicle || 'Customer delivery')}" loading="lazy">
@@ -194,6 +194,38 @@ function clientSlideCard(d) {
       <a class="btn btn-sm" href="financing.html#approval">Start Matching</a>
     </div>
   </div>`;
+}
+
+function deliveryImages(d) {
+  if (!d || typeof d !== 'object') return [];
+  const out = [];
+  const add = value => {
+    if (!value) return;
+    if (Array.isArray(value)) {
+      value.forEach(add);
+      return;
+    }
+    if (typeof value === 'object') {
+      add(value.url || value.src || value.data || value.image || value.photo || value.photoUrl || value.imageUrl);
+      return;
+    }
+    const text = String(value).trim();
+    if (text) out.push(text);
+  };
+  add(d.images);
+  add(d.image);
+  add(d.photo);
+  add(d.photoUrl);
+  add(d.imageUrl);
+  add(d.url);
+  add(d.src);
+  return [...new Set(out)];
+}
+
+function isVisibleDelivery(d) {
+  if (!d || typeof d !== 'object') return false;
+  const status = String(d.status || '').toLowerCase();
+  return d.archiveHidden !== true && d.archived !== true && status !== 'archived';
 }
 
 function renderHomepageNavigationPreview(d, inv) {
@@ -229,7 +261,7 @@ function renderHomepageNavigationPreview(d, inv) {
 
   const clientSlides = $('#homeClientSlideshow');
   if (clientSlides) {
-    const deliveries = (d.deliveries || []).filter(x => x.archiveHidden !== true && Array.isArray(x.images) && x.images.length);
+    const deliveries = (d.deliveries || []).filter(x => isVisibleDelivery(x) && deliveryImages(x).length);
     clientSlides.innerHTML = deliveries.length ? deliveries.slice(0, 10).map(clientSlideCard).join('') :
       `<div class="client-slide-card client-slide-empty">
         <div class="client-slide-copy">
@@ -288,6 +320,28 @@ async function renderHome() {
         <div class="review-author">${r.name}</div>
         <div class="review-verified">Verified buyer</div>
       </div>`).join('');
+  }
+
+  if (reviews && !reviews.innerHTML.trim()) {
+    reviews.innerHTML = `
+      <div class="review-card">
+        <div class="review-stars">Vehicle Matching</div>
+        <p class="review-text">Tell us what you are looking for and we will help narrow down realistic next steps.</p>
+        <div class="review-author">Simple request</div>
+        <div class="review-verified">No sensitive info on the public form</div>
+      </div>
+      <div class="review-card">
+        <div class="review-stars">Canada-Wide</div>
+        <p class="review-text">Winnipeg-based support for customers across provinces and many credit situations.</p>
+        <div class="review-author">Flexible support</div>
+        <div class="review-verified">Approval subject to lender requirements</div>
+      </div>
+      <div class="review-card">
+        <div class="review-stars">Real Follow-Up</div>
+        <p class="review-text">Your request goes to the team so they can contact you about options that fit your situation.</p>
+        <div class="review-author">Fast contact</div>
+        <div class="review-verified">Phone, text, or email with consent</div>
+      </div>`;
   }
 
   // Stats
