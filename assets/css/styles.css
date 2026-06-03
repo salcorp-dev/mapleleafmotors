@@ -2989,3 +2989,89 @@ body .vehicle-category-card strong{
     min-height:360px !important;
   }
 }
+
+
+/* v12.17 Final dark category cards - no photos */
+body .vehicle-category-card,
+body .vehicle-category-card.car,
+body .vehicle-category-card.suv,
+body .vehicle-category-card.truck,
+body .vehicle-category-card.more{
+  background-image:none !important;
+  background-size:auto !important;
+  background-position:center !important;
+  color:#fff !important;
+  border:1px solid rgba(255,255,255,.10) !important;
+  box-shadow:0 24px 60px rgba(15,23,42,.18) !important;
+}
+body .vehicle-category-card.car{
+  background:
+    radial-gradient(circle at 82% 16%,rgba(220,6,50,.26),transparent 32%),
+    radial-gradient(circle at 12% 22%,rgba(20,184,166,.18),transparent 34%),
+    linear-gradient(135deg,#071b1b 0%,#050b12 58%,#020617 100%) !important;
+}
+body .vehicle-category-card.suv{
+  background:
+    radial-gradient(circle at 85% 18%,rgba(220,6,50,.22),transparent 32%),
+    radial-gradient(circle at 15% 18%,rgba(59,130,246,.22),transparent 34%),
+    linear-gradient(135deg,#13236b 0%,#071127 58%,#020617 100%) !important;
+}
+body .vehicle-category-card.truck{
+  background:
+    radial-gradient(circle at 82% 14%,rgba(220,6,50,.25),transparent 34%),
+    radial-gradient(circle at 10% 15%,rgba(251,113,133,.14),transparent 36%),
+    linear-gradient(135deg,#5b1320 0%,#160915 58%,#020617 100%) !important;
+}
+body .vehicle-category-card.more{
+  background:
+    radial-gradient(circle at 82% 16%,rgba(220,6,50,.24),transparent 34%),
+    radial-gradient(circle at 12% 18%,rgba(245,158,11,.14),transparent 35%),
+    linear-gradient(135deg,#3b1712 0%,#120b10 58%,#020617 100%) !important;
+}
+body .vehicle-category-card:before{
+  display:block !important;
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.03),rgba(0,0,0,.28)),
+    linear-gradient(135deg,rgba(255,255,255,.05),rgba(255,255,255,0)) !important;
+  z-index:0 !important;
+}
+body .vehicle-category-card:after{
+  display:none !important;
+}
+body .vehicle-category-card span{
+  position:relative !important;
+  z-index:5 !important;
+  background:linear-gradient(135deg,#dc0632,#b90729) !important;
+  color:#fff !important;
+  box-shadow:0 14px 30px rgba(220,6,50,.28) !important;
+}
+body .vehicle-category-card h3,
+body .vehicle-category-card p,
+body .vehicle-category-card strong{
+  position:relative !important;
+  z-index:5 !important;
+  color:#fff !important;
+  text-shadow:none !important;
+}
+body .vehicle-category-card p{
+  color:rgba(255,255,255,.78) !important;
+}
+body .vehicle-category-card strong{
+  color:#fff !important;
+}
+@media(max-width:980px){
+  body .vehicle-category-card.car,
+  body .vehicle-category-card.suv,
+  body .vehicle-category-card.truck,
+  body .vehicle-category-card.more{
+    min-height:300px !important;
+  }
+}
+@media(max-width:640px){
+  body .vehicle-category-card.car,
+  body .vehicle-category-card.suv,
+  body .vehicle-category-card.truck,
+  body .vehicle-category-card.more{
+    min-height:320px !important;
+  }
+}
