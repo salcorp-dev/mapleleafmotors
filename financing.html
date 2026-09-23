@@ -3,12 +3,31 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- Meta Pixel Code -->
+<script>
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '1078447861507419');
+fbq('track', 'PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none"
+src="https://www.facebook.com/tr?id=1078447861507419&ev=PageView&noscript=1"
+/></noscript>
+<!-- End Meta Pixel Code -->
 <title>Canada Vehicle Financing & Matching | Maple Leaf Motors Winnipeg</title>
 <meta name="description" content="Start a simple Canada-wide vehicle financing and matching request. Maple Leaf Motors helps with car loans, SUV financing, truck financing, bad credit, new to Canada, self-employed, pension income, bankruptcy, and consumer proposal situations.">
 <meta name="keywords" content="Canada-wide vehicle financing, Winnipeg auto financing, car loan Canada, bad credit car loan Canada, vehicle financing Winnipeg, new to Canada car financing, self-employed car loan, truck financing Canada, SUV financing, auto loan help Canada">
 <meta property="og:title" content="Canada Vehicle Financing & Matching | Maple Leaf Motors">
 <meta property="og:description" content="Check realistic vehicle financing options across Canada. All credit and many income situations welcome, subject to lender requirements.">
-<link rel="stylesheet" href="assets/css/styles.css">
+<link rel="stylesheet" href="assets/css/styles.css?v=14">
+<link rel="stylesheet" href="assets/css/design.css?v=14">
+<link rel="stylesheet" href="assets/css/remaster.css?v=14">
 <link rel="icon" href="assets/images/maple-leaf-motors-logo.png">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"Service","name":"Canada-wide vehicle financing and matching","provider":{"@type":"LocalBusiness","name":"Maple Leaf Motors","telephone":"+1-204-509-2668","email":"mapleleaf_motors@outlook.com","address":{"@type":"PostalAddress","streetAddress":"611 Corydon Ave","addressLocality":"Winnipeg","addressRegion":"MB","postalCode":"R3L 0P3","addressCountry":"CA"}},"areaServed":"CA","description":"Vehicle matching and financing support through dealer and financing partner availability. Approval is subject to lender requirements."}</script>
 </head>
@@ -266,9 +285,7 @@
       <div>
         <h4>Explore</h4>
         <ul class="footer-links">
-          <li></li>
           <li><a href="financing.html">Start Here</a></li>
-          <li></li>
           <li><a href="locations.html">Service Areas</a></li>
           <li><a href="contact.html">Contact Us</a></li>
           <li><a href="legal.html">Legal Terms</a></li>
@@ -309,7 +326,35 @@
   </div>
 </div>
 
-<script src="assets/js/app.js"></script>
-<script src="assets/js/funnel.js?v=9.8"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="assets/js/bg-video.js?v=14"></script>
+<script src="assets/js/app.js?v=14"></script>
+<script src="assets/js/funnel.js?v=14"></script>
+<script>
+/* Financing page entrance animation */
+(function() {
+  function run() {
+    if (typeof gsap === 'undefined') return;
+    gsap.registerPlugin(ScrollTrigger);
+
+    /* Hero card entrance */
+    gsap.fromTo('.funnel-hero-card', { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.9, ease: 'power3.out', delay: 0.25 });
+    gsap.fromTo('.funnel-form-card', { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 0.9, ease: 'power3.out', delay: 0.4 });
+
+    /* Situation cards scroll reveal */
+    gsap.fromTo('.financing-situation-card', { opacity: 0, y: 40 }, {
+      opacity: 1, y: 0, duration: 0.65, ease: 'power3.out', stagger: 0.12,
+      scrollTrigger: { trigger: '.financing-situation-card', start: 'top 88%', once: true }
+    });
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', run);
+  } else {
+    run();
+  }
+})();
+</script>
+<script src="assets/js/remaster.js?v=14"></script>
 </body>
 </html>

@@ -1,0 +1,306 @@
+/* =============================================
+   MAPLE LEAF MOTORS — Remaster layer (Sept 2026)
+   Same dark / red / Bebas design system as design.css,
+   pushed further: spotlight glass, animated accents,
+   kinetic type, marquee, richer motion. Loads last.
+   ============================================= */
+
+:root {
+  --rm-red: #c8102e;
+  --rm-red-hot: #ff4d5e;
+  --rm-ember: #ff7a45;
+  --rm-ease: cubic-bezier(.2, .8, .2, 1);
+  --rm-grad: linear-gradient(100deg, #d2102e 0%, #ff5a3c 35%, #ff9a6b 50%, #ff5a3c 65%, #d2102e 100%);
+}
+
+::selection { background: rgba(200, 16, 46, 0.55); color: #fff; }
+html { scroll-behavior: smooth; }
+:focus-visible { outline: 2px solid var(--rm-red-hot); outline-offset: 3px; border-radius: 6px; }
+
+/* Soft daylight veil over the 3D scene (keeps text crisp) + faint paper grain */
+body::before {
+  content: "";
+  position: fixed; inset: 0;
+  pointer-events: none; z-index: 0;
+  background:
+    linear-gradient(90deg, rgba(250, 248, 245, .78) 0%, rgba(250, 248, 245, .35) 45%, rgba(250, 248, 245, 0) 70%),
+    linear-gradient(180deg, rgba(250, 248, 245, 0) 55%, rgba(250, 248, 245, .7) 100%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.05'/%3E%3C/svg%3E");
+}
+
+/* Scroll progress rail */
+.rm-progress {
+  position: fixed; top: 0; left: 0; right: 0; height: 2px;
+  z-index: 200 !important; pointer-events: none;
+  transform-origin: 0 50%; transform: scaleX(0); will-change: transform;
+  background: linear-gradient(90deg, var(--rm-red), var(--rm-red-hot), var(--rm-ember));
+  box-shadow: 0 0 12px rgba(255, 77, 94, 0.7);
+}
+
+/* ── Nav: condenses on scroll, sliding underline ── */
+.nav { transition: background .35s var(--rm-ease), box-shadow .35s var(--rm-ease), padding .35s var(--rm-ease); }
+.nav.rm-scrolled {
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 10px 30px -12px rgba(22, 24, 29, 0.18);
+}
+.nav.rm-scrolled .brand img { width: 44px; height: 44px; }
+.brand img { transition: width .35s var(--rm-ease), height .35s var(--rm-ease), transform .5s var(--rm-ease); }
+.brand:hover img { transform: rotate(-8deg) scale(1.06); }
+@media (min-width: 861px) {
+  .nav-links a:not(.btn):not(.nav-cta) { position: relative; }
+  .nav-links a:not(.btn):not(.nav-cta)::after {
+    content: ""; position: absolute; left: 14px; right: 14px; bottom: 6px; height: 2px;
+    background: var(--rm-red-hot); border-radius: 2px;
+    transform: scaleX(0); transform-origin: right; transition: transform .35s var(--rm-ease);
+  }
+  .nav-links a:not(.btn):not(.nav-cta):hover::after,
+  .nav-links a.active::after { transform: scaleX(1); transform-origin: left; }
+}
+.nav-cta { position: relative; overflow: hidden; isolation: isolate; }
+.nav-cta::before {
+  content: ""; position: absolute; inset: -2px; z-index: -1; border-radius: inherit;
+  background: conic-gradient(from var(--rm-angle, 0deg), transparent 0 70%, rgba(255, 255, 255, .55) 80%, transparent 90%);
+  opacity: .3;
+}
+
+/* ── Kinetic headline accent ── */
+.hero-copy h1 em,
+.funnel-title em,
+h1 .rm-accent, h2 .rm-accent {
+  font-style: normal;
+  background: var(--rm-grad);
+  background-size: 250% 100%;
+  -webkit-background-clip: text; background-clip: text;
+  color: transparent !important;
+  animation: rm-sheen 6s ease-in-out infinite;
+
+}
+
+
+/* Split-word reveal (words wrapped by remaster.js) */
+.rm-js .rm-words .rm-w { display: inline-block; overflow: hidden; vertical-align: top; padding-bottom: .04em; }
+.rm-js .rm-words .rm-w > span { display: inline-block; transform: translateY(105%); transition: transform .9s var(--rm-ease); transition-delay: calc(var(--i) * 55ms + 120ms); }
+.rm-js .rm-words.rm-in .rm-w > span { transform: none; }
+
+/* Ambient aurora behind hero */
+.hero { overflow: hidden; }
+.hero::before, .hero::after {
+  content: ""; position: absolute; pointer-events: none; z-index: 0;
+  border-radius: 50%; opacity: .55;
+}
+.hero::before { width: 520px; height: 520px; left: -140px; top: -120px; background: radial-gradient(circle, rgba(255, 170, 140, .45), transparent 65%); }
+.hero::after { width: 460px; height: 460px; right: -120px; bottom: -160px; background: radial-gradient(circle, rgba(210, 16, 46, .14), transparent 65%); }
+
+/* Hero trust pill gets a live indicator */
+.hero-trust > span:first-child::before {
+  content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 8px; border-radius: 50%;
+  background: #22c55e; box-shadow: 0 0 0 0 rgba(34, 197, 94, .6); animation: rm-ping 2.2s infinite; vertical-align: 1px;
+}
+
+/* ── Spotlight glass: cursor-follow glow on every card ── */
+.rm-spot { position: relative; isolation: isolate; }
+/* Cards get a red hairline that draws across the top on hover */
+.rm-spot:not(.approval-band):not(.hero-approval-card) { overflow: hidden; }
+.rm-spot::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: 2;
+  background: radial-gradient(420px circle at var(--mx, 50%) var(--my, -30%), rgba(210, 16, 46, 0.06), transparent 45%);
+  opacity: 0; transition: opacity .4s ease;
+}
+.rm-spot:hover::after { opacity: 1; }
+.rm-spot::before {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: 3; padding: 1px;
+  background: radial-gradient(260px circle at var(--mx, 50%) var(--my, -30%), rgba(210, 16, 46, .55), transparent 60%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  opacity: 0; transition: opacity .4s ease;
+}
+.rm-spot:hover::before { opacity: 1; }
+
+/* 3D tilt (vars set by remaster.js) */
+.rm-tilt { transform-style: preserve-3d; will-change: transform; }
+.rm-tilt.rm-tilting { transition: transform .12s linear !important; transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translateY(-6px) !important; }
+
+/* ── Buttons: arrow nudge + press ── */
+.btn { position: relative; overflow: hidden; }
+.btn::after {
+  content: ""; position: absolute; top: 0; bottom: 0; width: 40%; left: -60%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, .35), transparent);
+  transform: skewX(-20deg); transition: left .6s var(--rm-ease); pointer-events: none;
+}
+.btn:hover::after { left: 130%; }
+.btn:not(.btn-outline):not(.btn-outline-white):not(.btn-ghost):hover { animation: none; }
+.rm-arrow { display: inline-block; transition: transform .3s var(--rm-ease); }
+a:hover .rm-arrow, button:hover .rm-arrow { transform: translateX(5px); }
+
+/* ── Section headers: numbered eyebrow + ruled line ── */
+.section-head { position: relative; }
+.eyebrow[data-rm-num]::after {
+  content: attr(data-rm-num); margin-left: 10px; padding: 2px 8px; border-radius: 999px;
+  font-size: 10px; letter-spacing: .12em; color: var(--muted);
+  border: 1px solid var(--line-2);
+}
+.section-head-left h2, .delivery-showcase-head h2 { max-width: 16ch; }
+
+/* ── Marquee ribbon ── */
+.rm-marquee {
+  position: relative; overflow: hidden; padding: 18px 0;
+  border-block: 1px solid var(--line);
+  background: rgba(255, 255, 255, .82);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  -webkit-mask: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+          mask: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+}
+.rm-marquee-track { display: flex; width: max-content; gap: 0; animation: rm-marquee 38s linear infinite; will-change: transform; }
+.rm-marquee:hover .rm-marquee-track { animation-play-state: paused; }
+.rm-marquee-track span {
+  display: inline-flex; align-items: center; gap: 22px; padding-right: 22px; white-space: nowrap;
+  font-family: var(--font-display); font-size: clamp(22px, 3vw, 34px); letter-spacing: .04em; color: var(--ink);
+}
+.rm-marquee-track span:nth-child(even) { color: transparent; -webkit-text-stroke: 1px rgba(22, 24, 29, .45); }
+.rm-marquee-track span::after { content: ""; width: 14px; height: 14px; flex: none; border-radius: 3px; background: var(--red); transform: rotate(45deg); }
+
+/* ── Category cards: bigger presence, image zoom, index number ── */
+.vehicle-category-grid { counter-reset: rmcat; }
+.vehicle-category-card { overflow: hidden; counter-increment: rmcat; }
+.vehicle-category-card > * { position: relative; z-index: 1; }
+.vehicle-category-card strong { display: inline-flex; gap: 6px; transition: gap .3s var(--rm-ease); }
+.vehicle-category-card:hover strong { gap: 12px; }
+
+/* ── Process: connected timeline ── */
+.home-process-grid { position: relative; }
+@media (min-width: 861px) {
+  .home-process-grid::before {
+    content: ""; position: absolute; left: 8%; right: 8%; top: 44px; height: 1px; z-index: 0;
+    background: linear-gradient(90deg, transparent, rgba(210, 16, 46, .45), transparent);
+    transform-origin: left; transform: scaleX(var(--rm-line, 0)); transition: transform 1.4s var(--rm-ease);
+  }
+  .home-process-grid.rm-in { --rm-line: 1; }
+}
+.home-process-card { position: relative; z-index: 1; }
+.home-process-card > span {
+  display: inline-grid !important; place-items: center; width: 56px; height: 56px; border-radius: 16px;
+  font-size: 32px !important; margin-bottom: 16px !important;
+  background: var(--red-soft); color: var(--red) !important;
+  border: 1px solid rgba(210, 16, 46, .18);
+}
+
+/* ── Delivery showcase: cinematic frame ── */
+.delivery-showcase-section { position: relative; overflow: hidden; }
+.delivery-showcase-section::before {
+  content: ""; position: absolute; inset: -1px; border-radius: inherit; padding: 1px; pointer-events: none;
+  background: conic-gradient(from var(--rm-angle, 0deg), rgba(210, 16, 46, 0) 0 60%, rgba(210, 16, 46, .7) 75%, rgba(255, 90, 60, .5) 80%, rgba(210, 16, 46, 0) 92%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+}
+.delivery-photo-side { overflow: hidden; }
+.delivery-photo-side img { transition: transform 6s ease-out; }
+.delivery-showcase-card.active .delivery-photo-side img { transform: scale(1.06); }
+.delivery-quote-side blockquote { font-size: clamp(18px, 1.8vw, 24px); line-height: 1.45; position: relative; }
+
+/* ── Approval band: glowing checks ── */
+.approval-band { position: relative; overflow: hidden; }
+.approval-band::after {
+  content: ""; position: absolute; right: -10%; top: -40%; width: 60%; height: 180%; pointer-events: none;
+  background: radial-gradient(closest-side, rgba(255, 255, 255, .12), transparent);
+}
+.check { transition: transform .3s var(--rm-ease), border-color .3s ease, background .3s ease; }
+.check:hover { transform: translateX(4px); background: rgba(255, 255, 255, .22) !important; }
+
+/* ── Feature cards: icon lift ── */
+.feature-icon { transition: transform .5s var(--rm-ease), box-shadow .5s ease; }
+.feature-card:hover .feature-icon { transform: translateY(-4px) rotate(-6deg); box-shadow: 0 12px 24px -8px rgba(210, 16, 46, .45); }
+
+/* ── Review cards: oversized quote glyph ── */
+.review-card { position: relative; overflow: hidden; }
+.review-card > :first-child::before {
+  content: "\201C"; position: absolute; right: 14px; top: -18px;
+  font-family: Georgia, serif; font-size: 120px; line-height: 1; color: rgba(210, 16, 46, .12); pointer-events: none;
+}
+
+/* ── Forms: floating focus glow ── */
+.form-group input, .form-group textarea, .form-group select { transition: border-color .25s ease, box-shadow .25s ease, background .25s ease; }
+.form-group:focus-within label { color: var(--red); }
+.funnel-option { transition: transform .25s var(--rm-ease), border-color .25s ease, background .25s ease !important; }
+.funnel-option:hover { transform: translateY(-2px); }
+.funnel-progress span { position: relative; overflow: hidden; }
+.funnel-progress span::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .55), transparent);
+  animation: rm-sweep 1.8s linear infinite;
+}
+
+
+/* ── Footer: giant outlined wordmark ── */
+.footer { position: relative; overflow: hidden; }
+.rm-wordmark {
+  display: block; margin: 36px 0 -0.18em; text-align: center; white-space: nowrap; user-select: none;
+  font-family: var(--font-display); font-size: clamp(56px, 13.5vw, 210px); line-height: .85; letter-spacing: .01em;
+  color: transparent; -webkit-text-stroke: 1px rgba(22, 24, 29, .12);
+  background: radial-gradient(600px circle at var(--mx, 50%) 60%, rgba(210, 16, 46, .9), transparent 55%);
+  -webkit-background-clip: text; background-clip: text;
+}
+.footer-links a { transition: color .2s ease, padding-left .3s var(--rm-ease); }
+.footer-links a:hover { padding-left: 6px; }
+
+/* Sticky mobile bar floats */
+@media (max-width: 860px) {
+  .sticky-mobile { backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
+  .sticky-bar a.primary { box-shadow: 0 8px 22px -6px rgba(210, 16, 46, .55); }
+}
+
+/* ── Scroll reveal (only when JS is running) ── */
+.rm-js [data-rm-reveal] { opacity: 0; transform: translateY(36px) scale(.985); transition: opacity .9s var(--rm-ease), transform .9s var(--rm-ease); transition-delay: var(--rm-d, 0ms); }
+.rm-js [data-rm-reveal].rm-in { opacity: 1; transform: none; }
+
+/* ── Keyframes ── */
+@property --rm-angle { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+@keyframes rm-spin { to { --rm-angle: 360deg; } }
+@keyframes rm-sheen { 0%, 100% { background-position: 100% 0; } 50% { background-position: 0% 0; } }
+@keyframes rm-drift { from { transform: translate3d(0, 0, 0) scale(1); } to { transform: translate3d(60px, 40px, 0) scale(1.15); } }
+@keyframes rm-ping { 0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, .6); } 80%, 100% { box-shadow: 0 0 0 9px rgba(34, 197, 94, 0); } }
+@keyframes rm-marquee { to { transform: translateX(-50%); } }
+@keyframes rm-sweep { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .rm-marquee-track, .hero::before, .hero::after, .nav-cta::before, .delivery-showcase-section::before, .approval-band::after { animation: none !important; }
+  .rm-js [data-rm-reveal], .rm-js .rm-words .rm-w > span { opacity: 1 !important; transform: none !important; filter: none !important; }
+  body::before { display: none; }
+}
+@media (hover: none) { .rm-spot::before, .rm-spot::after { display: none; } }
+
+/* Phones: road runs behind the text column, so soften the whole scene */
+@media (max-width: 767px) {
+  body::before { background: rgba(250, 248, 245, .62); }
+}
+
+/* ── Real highway footage background (bg-video.js) ── */
+#mlm-bg-scene {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
+  background: var(--bg-2) center / cover no-repeat;
+  will-change: opacity; transform: translateZ(0);
+}
+#mlm-bg-scene video {
+  position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
+  transition: opacity 1.2s ease;
+}
+#mlm-bg-scene:not(.is-playing) video { opacity: 0 !important; }
+
+/* Cream wash over the footage: strong behind the hero copy on the left */
+body:has(#mlm-bg-scene video)::before, body:has(#mlm-bg-scene)::before {
+  z-index: 1; /* above the footage (z 0), below page content (z 1, later in the DOM) */
+  background:
+    linear-gradient(90deg, rgba(250, 248, 245, .88) 0%, rgba(250, 248, 245, .62) 38%, rgba(250, 248, 245, .18) 62%, rgba(250, 248, 245, .1) 100%),
+    linear-gradient(180deg, rgba(250, 248, 245, .25) 0%, rgba(250, 248, 245, 0) 30%);
+}
+@media (max-width: 767px) {
+  body:has(#mlm-bg-scene)::before { background: rgba(250, 248, 245, .74); }
+}
+
+/* ── Performance: no live background blur anywhere on public pages ──
+   Frosted-glass (backdrop-filter) over a playing video is re-blurred every frame,
+   which is the main cause of jank. Near-opaque surfaces give the same look for free. */
+*, *::before, *::after { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+.nav { background: rgba(250, 248, 245, .96) !important; }
+.nav.rm-scrolled { background: rgba(255, 255, 255, .98) !important; }
+.hero-trust, .rm-marquee { background: rgba(255, 255, 255, .94) !important; }
+.sticky-mobile { background: rgba(250, 248, 245, .98) !important; }

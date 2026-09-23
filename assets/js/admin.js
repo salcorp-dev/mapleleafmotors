@@ -1,10 +1,13 @@
 const ADMIN_SESSION_KEY = 'mlm_admin_session';
+const ADMIN_USER_KEY = 'mlm_admin_user';
 const STATUSES = ['NEW LEAD','CONTACTED','APPLICATION SENT','DEALERTRACK SUBMITTED','APPROVED','NEEDS COSIGNER','VEHICLE SELECTED','DELIVERED','LOST'];
 
 const $ = (s, p = document) => p.querySelector(s);
 const $$ = (s, p = document) => [...p.querySelectorAll(s)];
 
 let CONFIG_CACHE = null;
+let CURRENT_ADMIN_USER = null;
+let ADMIN_USERS = [];
 
 async function loadConfig() {
   if (CONFIG_CACHE) return CONFIG_CACHE;
@@ -31,9 +34,31 @@ function setAdminToken(token) {
   sessionStorage.setItem('mlm_admin', 'yes');
 }
 
+function setAdminUser(user) {
+  CURRENT_ADMIN_USER = user || null;
+  if (user) sessionStorage.setItem(ADMIN_USER_KEY, JSON.stringify(user));
+  else sessionStorage.removeItem(ADMIN_USER_KEY);
+}
+
+function getStoredAdminUser() {
+  if (CURRENT_ADMIN_USER) return CURRENT_ADMIN_USER;
+  try {
+    CURRENT_ADMIN_USER = JSON.parse(sessionStorage.getItem(ADMIN_USER_KEY) || 'null');
+  } catch (e) {
+    CURRENT_ADMIN_USER = null;
+  }
+  return CURRENT_ADMIN_USER;
+}
+
 function clearAdminToken() {
   sessionStorage.removeItem(ADMIN_SESSION_KEY);
   sessionStorage.removeItem('mlm_admin');
+  setAdminUser(null);
+}
+
+function logoutAdmin() {
+  clearAdminToken();
+  location.href = 'index.html';
 }
 
 async function adminRequest(path, options = {}) {
@@ -63,7 +88,8 @@ async function adminRequest(path, options = {}) {
 async function verifyAdminSession() {
   if (!adminToken()) return false;
   try {
-    await adminRequest('/session', { method: 'GET' });
+    const data = await adminRequest('/session', { method: 'GET' });
+    setAdminUser(data.user || { role: data.role });
     return true;
   } catch (e) {
     clearAdminToken();
@@ -102,18 +128,19 @@ async function login() {
 
   f.onsubmit = async e => {
     e.preventDefault();
+    const username = ($('#username')?.value || '').trim();
     const password = $('#password').value;
     const msg = $('#msg');
 
     try {
       const config = await loadConfig();
       const base = (config.adminApiUrl || 'https://maple-leaf-inventory.sal96wpg.workers.dev/admin').replace(/\/$/, '');
-      if (msg) msg.textContent = 'Checking password...';
+      if (msg) msg.textContent = 'Checking login...';
 
       const res = await fetch(`${base}/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password })
+        body: JSON.stringify({ username, password })
       });
 
       const data = await res.json().catch(() => ({}));
@@ -122,6 +149,7 @@ async function login() {
       }
 
       setAdminToken(data.token);
+      setAdminUser(data.user || null);
       location.href = 'dashboard.html';
     } catch (err) {
       if (msg) msg.textContent = err.message || 'Login failed.';
@@ -139,6 +167,7 @@ function tabs() {
       if (section) section.classList.add('active');
       if (t.dataset.tab === 'leads') loadFinanceLeads();
       if (t.dataset.tab === 'inventory') loadLiveInventory();
+      if (t.dataset.tab === 'accounts') loadAdminUsers();
     };
   });
 
@@ -149,6 +178,20 @@ function tabs() {
       if (tab) tab.click();
     };
   });
+}
+
+function applyRoleUi() {
+  const user = getStoredAdminUser();
+  const role = user?.role || '';
+  const badge = $('#adminUserBadge');
+  if (badge && user) badge.textContent = `${user.displayName || user.username || 'User'} · ${role}`;
+  if ($('#adminTimestamp') && user) $('#adminTimestamp').textContent = `${user.displayName || user.username || 'User'} · ${role}`;
+
+  if (role !== 'admin') {
+    $$('[data-admin-only]').forEach(el => { el.style.display = 'none'; });
+    const leadsTab = $('.tab[data-tab="leads"]');
+    if (leadsTab && !leadsTab.classList.contains('active')) leadsTab.click();
+  }
 }
 
 function readFiles(files) {
@@ -249,16 +292,52 @@ async function patchClientInApi(config, type, id, entry) {
 
 let FINANCE_LEADS = [];
 function csvEscape(v){const s=String(v??'');return /[",\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s;}
-async function loadFinanceLeads(){if(!$('#financeLeadRows'))return;try{const res=await adminRequest('/leads',{method:'GET'});FINANCE_LEADS=Array.isArray(res.leads)?res.leads:[];renderFinanceLeads()}catch(err){$('#financeLeadRows').innerHTML=`<tr><td colspan="5">Could not load leads: ${escapeHtml(err.message)}</td></tr>`}}
-function filteredFinanceLeads(){const q=($('#leadSearch')?.value||'').toLowerCase().trim();const status=$('#leadStatusFilter')?.value||'';return FINANCE_LEADS.filter(l=>{const t=[l.firstName,l.lastName,l.phone,l.email,l.city,l.vehicleType,l.creditSituation,l.incomeType,l.budget].join(' ').toLowerCase();return(!q||t.includes(q))&&(!status||l.status===status)})}
+function isAdminUser(){return (getStoredAdminUser()?.role || '') === 'admin';}
+function userDisplayName(id){const u=ADMIN_USERS.find(x=>String(x.id)===String(id)||String(x.userId)===String(id));return u?.displayName||'';}
+async function loadAdminUsers(){if(!isAdminUser())return;try{const res=await adminRequest('/users',{method:'GET'});ADMIN_USERS=Array.isArray(res.users)?res.users:[];renderAssignmentFilter();renderAdminAccounts()}catch(e){ADMIN_USERS=[];renderAdminAccounts();}}
+function renderAssignmentFilter(){const select=$('#leadAssignedFilter');if(!select)return;const current=select.value;select.innerHTML='<option value="">All assigned users</option><option value="__unassigned">Unassigned</option>'+ADMIN_USERS.map(u=>`<option value="${escapeHtml(u.id||u.userId)}">${escapeHtml(u.displayName||u.username)}</option>`).join('');select.value=[...select.options].some(o=>o.value===current)?current:'';}
+function renderAdminAccounts(){const rows=$('#adminUserRows');if(!rows)return;rows.innerHTML=ADMIN_USERS.map(u=>`<tr><td><strong>${escapeHtml(u.displayName||'')}</strong></td><td>${escapeHtml(u.username||'')}</td><td><span class="status-chip ${u.role==='admin'?'ok':''}">${escapeHtml(u.role||'sales')}</span></td></tr>`).join('')||'<tr><td colspan="3">No accounts found.</td></tr>';}
+async function createAdminAccount(payload){const res=await adminRequest('/users',{method:'POST',json:payload});if(res&&res.user){const id=String(res.user.id||res.user.userId||'');if(!ADMIN_USERS.some(u=>String(u.id||u.userId)===id))ADMIN_USERS.push(res.user);renderAssignmentFilter();renderAdminAccounts();}else{await loadAdminUsers();}return res.user;}
+// Bind the "Create Account" form independently of dashboard() — that init early-returns
+// on this page (it checks for a legacy #leadRows element that no longer exists), so the
+// handler must be attached here to stop the form doing a native GET submit. Idempotent.
+function bindAdminUserForm(){
+  const form=$('#adminUserForm');
+  if(!form||form.dataset.bound)return;
+  form.dataset.bound='1';
+  form.addEventListener('submit',async e=>{
+    e.preventDefault();
+    const msg=$('#adminUserFormMsg');
+    const fd=new FormData(form);
+    const payload={
+      displayName:String(fd.get('displayName')||'').trim(),
+      username:String(fd.get('username')||'').trim(),
+      role:String(fd.get('role')||'sales'),
+      password:String(fd.get('password')||'')
+    };
+    try{
+      if(msg)msg.textContent='Creating account...';
+      await createAdminAccount(payload);
+      form.reset();
+      if(msg)msg.textContent='Account created.';
+    }catch(err){
+      if(msg)msg.textContent=err.message||'Could not create account.';
+    }
+  });
+}
+async function loadFinanceLeads(){if(!$('#financeLeadRows'))return;try{if(isAdminUser()&&!ADMIN_USERS.length)await loadAdminUsers();const res=await adminRequest('/leads',{method:'GET'});FINANCE_LEADS=Array.isArray(res.leads)?res.leads:[];renderFinanceLeads()}catch(err){$('#financeLeadRows').innerHTML=`<tr><td colspan="5">Could not load leads: ${escapeHtml(err.message)}</td></tr>`}}
+function filteredFinanceLeads(){const q=($('#leadSearch')?.value||'').toLowerCase().trim();const status=$('#leadStatusFilter')?.value||'';const assigned=$('#leadAssignedFilter')?.value||'';return FINANCE_LEADS.filter(l=>{const t=[l.firstName,l.lastName,l.phone,l.email,l.city,l.vehicleType,l.creditSituation,l.incomeType,l.budget,l.assignedToName,l.sourceType,l.campaign,l.adset,l.ad,l.placement].join(' ').toLowerCase();if(q&&!t.includes(q))return false;if(status&&l.status!==status)return false;if(assigned==='__unassigned'&&l.assignedTo)return false;if(assigned&&assigned!=='__unassigned'&&String(l.assignedTo||'')!==String(assigned))return false;return true})}
 function renderFinanceLeads(){
   if(!$('#financeLeadRows')) return;
 
   $('#leadStatTotal').textContent = FINANCE_LEADS.length;
   $('#leadStatNew').textContent = FINANCE_LEADS.filter(l => l.status === 'NEW LEAD').length;
   $('#leadStatApproved').textContent = FINANCE_LEADS.filter(l => l.status === 'APPROVED').length;
+  if($('#leadStatUnassigned')) $('#leadStatUnassigned').textContent = FINANCE_LEADS.filter(l => !l.assignedTo).length;
+  if($('#totalLeads')) $('#totalLeads').textContent = FINANCE_LEADS.length;
 
   const rows = filteredFinanceLeads();
+  const admin = isAdminUser();
 
   function vehicleOptions(selectedId = ''){
     const vehicles = Array.isArray(LIVE_INVENTORY) ? LIVE_INVENTORY.filter(v => v.archiveHidden !== true) : [];
@@ -280,6 +359,28 @@ function renderFinanceLeads(){
     };
   }
 
+  function assignmentOptions(selectedId=''){
+    return '<option value="">Unassigned</option>' + ADMIN_USERS.map(u => {
+      const id = String(u.id || u.userId || '');
+      return `<option value="${escapeHtml(id)}" ${String(selectedId || '') === id ? 'selected' : ''}>${escapeHtml(u.displayName || u.username || id)}</option>`;
+    }).join('');
+  }
+
+  function trackingHtml(l){
+    const parts = [
+      `<span class="badge-source">${escapeHtml(l.sourceType || l.source || 'website')}</span>`,
+      `<small>${escapeHtml((l.createdAt || l.submittedAt || '').replace('T',' ').slice(0,16))}</small>`,
+      l.campaign ? `<small>Campaign: ${escapeHtml(l.campaign)}</small>` : '',
+      l.adset ? `<small>Adset: ${escapeHtml(l.adset)}</small>` : '',
+      l.ad ? `<small>Ad: ${escapeHtml(l.ad)}</small>` : '',
+      l.placement ? `<small>Placement: ${escapeHtml(l.placement)}</small>` : '',
+      l.fbclid ? `<small>fbclid: ${escapeHtml(l.fbclid)}</small>` : '',
+      l.referrer ? `<small>Referrer: ${escapeHtml(l.referrer)}</small>` : '',
+      Number(l.duplicateCount || 0) ? `<small>Duplicates: ${Number(l.duplicateCount || 0)}</small>` : ''
+    ].filter(Boolean);
+    return parts.join('<br>');
+  }
+
   $('#financeLeadRows').innerHTML = rows.map(l => `<tr class="${l.status === 'NEW LEAD' ? 'lead-row-new' : ''}">
     <td>
       <strong>${escapeHtml(l.firstName)} ${escapeHtml(l.lastName)}</strong><br>
@@ -295,20 +396,19 @@ function renderFinanceLeads(){
       Best time: ${escapeHtml(l.bestTime)} / ${escapeHtml(l.contactPreference)}
     </td>
     <td>
-      <span class="badge-source">${escapeHtml(l.source || 'website')}</span><br>
-      <small>${escapeHtml((l.createdAt || '').replace('T',' ').slice(0,16))}</small><br>
-      ${l.campaign ? `<small>Campaign: ${escapeHtml(l.campaign)}</small><br>` : ''}
-      ${l.placement ? `<small>Placement: ${escapeHtml(l.placement)}</small>` : ''}
+      ${trackingHtml(l)}
     </td>
     <td>
       <select data-lead-status="${escapeHtml(l.id)}">${STATUSES.map(s => `<option ${l.status === s ? 'selected' : ''}>${s}</option>`).join('')}</select>
-      <label style="display:block;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:#667085;margin:8px 0 4px;font-weight:800;">Attached vehicle</label>
+      ${admin ? `<label style="display:block;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:#667085;margin:8px 0 4px;font-weight:800;">Assigned to</label>
+      <select data-lead-assigned="${escapeHtml(l.id)}">${assignmentOptions(l.assignedTo)}</select>` : `<small style="display:block;margin:8px 0;color:#667085;">Assigned to ${escapeHtml(l.assignedToName || getStoredAdminUser()?.displayName || 'you')}</small>`}
+      ${admin ? `<label style="display:block;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:#667085;margin:8px 0 4px;font-weight:800;">Attached vehicle</label>
       <select data-lead-vehicle="${escapeHtml(l.id)}">${vehicleOptions(l.attachedVehicleId)}</select>
-      ${l.attachedVehicleTitle ? `<small style="display:block;margin:4px 0 8px;color:#667085;">Current: ${escapeHtml(l.attachedVehicleTitle)}</small>` : ''}
+      ${l.attachedVehicleTitle ? `<small style="display:block;margin:4px 0 8px;color:#667085;">Current: ${escapeHtml(l.attachedVehicleTitle)}</small>` : ''}` : ''}
       <textarea class="lead-note-box" data-lead-notes="${escapeHtml(l.id)}" placeholder="Internal notes">${escapeHtml(l.notes || '')}</textarea>
       <button class="btn small light" data-save-lead="${escapeHtml(l.id)}">Save</button>
     </td>
-    <td><button class="btn small light" data-delete-lead="${escapeHtml(l.id)}">Delete</button></td>
+    <td>${admin ? `<button class="btn small light" data-delete-lead="${escapeHtml(l.id)}">Delete</button>` : '<small>View only</small>'}</td>
   </tr>`).join('') || '<tr><td colspan="5">No finance leads yet.</td></tr>';
 
   $$('[data-save-lead]').forEach(btn => {
@@ -316,10 +416,13 @@ function renderFinanceLeads(){
       const id = btn.dataset.saveLead;
       const status = $(`[data-lead-status="${CSS.escape(id)}"]`).value;
       const notes = $(`[data-lead-notes="${CSS.escape(id)}"]`).value;
+      const assignedTo = $(`[data-lead-assigned="${CSS.escape(id)}"]`)?.value || '';
       try {
+        const payload = { status, notes };
+        if (isAdminUser()) Object.assign(payload, { assignedTo, ...attachedPayload(id) });
         await adminRequest(`/leads/${encodeURIComponent(id)}`, {
           method: 'PATCH',
-          json: { status, notes, ...attachedPayload(id) }
+          json: payload
         });
         await loadFinanceLeads();
       } catch(e) {
@@ -341,7 +444,7 @@ function renderFinanceLeads(){
   });
 }
 
-function exportLeadsCsv(){const rows=[['Created','Status','First Name','Last Name','Phone','Email','City','Province','Vehicle Type','Credit Situation','Income Type','Budget','Best Time','Contact Preference','Notes','Source','Campaign','Adset','Placement','FBCLID']];FINANCE_LEADS.forEach(l=>rows.push([l.createdAt,l.status,l.firstName,l.lastName,l.phone,l.email,l.city,l.province,l.vehicleType,l.creditSituation,l.incomeType,l.budget,l.bestTime,l.contactPreference,l.notes,l.source,l.campaign,l.adset,l.placement,l.fbclid]));const csv=rows.map(r=>r.map(csvEscape).join(',')).join('\n');const blob=new Blob([csv],{type:'text/csv'});const x=document.createElement('a');x.href=URL.createObjectURL(blob);x.download=`maple-leaf-finance-leads-${new Date().toISOString().slice(0,10)}.csv`;x.click()}
+function exportLeadsCsv(){const rows=[['Created','Submitted','Status','Assigned To','First Name','Last Name','Phone','Email','City','Province','Vehicle Type','Credit Situation','Income Type','Budget','Best Time','Contact Preference','Notes','Source Type','Source','Campaign','Adset','Ad','Placement','FBCLID','Referrer','Landing Page','Page URL','Duplicate Count']];filteredFinanceLeads().forEach(l=>rows.push([l.createdAt,l.submittedAt,l.status,l.assignedToName||userDisplayName(l.assignedTo)||'Unassigned',l.firstName,l.lastName,l.phone,l.email,l.city,l.province,l.vehicleType,l.creditSituation,l.incomeType,l.budget,l.bestTime,l.contactPreference,l.notes,l.sourceType,l.source,l.campaign,l.adset,l.ad,l.placement,l.fbclid,l.referrer,l.landingPage,l.pageUrl,l.duplicateCount]));const csv=rows.map(r=>r.map(csvEscape).join(',')).join('\n');const blob=new Blob([csv],{type:'text/csv'});const x=document.createElement('a');x.href=URL.createObjectURL(blob);x.download=`maple-leaf-finance-leads-${new Date().toISOString().slice(0,10)}.csv`;x.click()}
 
 
 let LIVE_INVENTORY = [];
@@ -862,13 +965,20 @@ async function dashboard() {
   const exportAll = $('#exportAll');
   if (exportAll) {
     exportAll.onclick = () => {
-      let blob = new Blob([JSON.stringify({ siteData: data, leads: leads() }, null, 2)], { type: 'application/json' });
+      if (!isAdminUser()) {
+        exportLeadsCsv();
+        return;
+      }
+      let blob = new Blob([JSON.stringify({ siteData: data, leads: FINANCE_LEADS }, null, 2)], { type: 'application/json' });
       let a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
       a.download = 'maple-leaf-motors-export.json';
       a.click();
     };
   }
+
+  const logoutButtons = ['#logoutAdmin', '#logoutAdminAccount'].map(id => $(id)).filter(Boolean);
+  logoutButtons.forEach(btn => { btn.onclick = logoutAdmin; });
 
   const refreshBtn = $('#refreshClientsData');
   if (refreshBtn) refreshBtn.onclick = () => syncClientsFromApi(true);
@@ -963,7 +1073,7 @@ async function dashboard() {
           json: { currentPassword, newPassword }
         });
         passwordForm.reset();
-        alert('Admin password changed successfully. Use the new password next time you log in.');
+        alert('Password changed successfully. Use the new password next time you log in.');
       } catch (err) {
         alert('Password change failed: ' + err.message);
       }
@@ -971,23 +1081,89 @@ async function dashboard() {
   }
 
 
-  bindLiveInventoryControls();
-  await loadLiveInventory();
+  applyRoleUi();
+
+  if (isAdminUser()) {
+    bindLiveInventoryControls();
+    await loadLiveInventory();
+  }
 
   if ($('#refreshFinanceLeads')) $('#refreshFinanceLeads').onclick = loadFinanceLeads;
   if ($('#exportFinanceLeads')) $('#exportFinanceLeads').onclick = exportLeadsCsv;
   if ($('#leadSearch')) $('#leadSearch').oninput = renderFinanceLeads;
   if ($('#leadStatusFilter')) $('#leadStatusFilter').onchange = renderFinanceLeads;
+  if ($('#leadAssignedFilter')) $('#leadAssignedFilter').onchange = renderFinanceLeads;
+  bindAdminUserForm();
+  if ($('#copyCampaignLink')) $('#copyCampaignLink').onclick = async () => {
+    const base = `${location.origin}/get-approved.html?utm_source=facebook&utm_medium=paid_social&utm_campaign={{campaign.name}}&adset={{adset.name}}&ad={{ad.name}}&placement={{placement}}`;
+    try { await navigator.clipboard.writeText(base); alert('Campaign link copied.'); }
+    catch(e) { prompt('Copy this campaign link:', base); }
+  };
   await loadFinanceLeads();
   refresh();
-  syncClientsFromApi(false);
+  renderFinanceLeads();
+  if (isAdminUser()) syncClientsFromApi(false);
+}
+
+async function loadCapiStatus(){
+  const el = $('#capiStatus');
+  if (!el || !isAdminUser()) return;
+  try {
+    const res = await adminRequest('/capi/status', { method: 'GET' });
+    if (res.configured) {
+      const when = res.lastEventAt ? new Date(res.lastEventAt).toLocaleString() : 'no events yet';
+      const errBit = res.lastStatus === 'error' && res.lastError ? ` — last error: ${escapeHtml(res.lastError)}` : '';
+      el.innerHTML = `<span class="status-chip ok">● Connected</span> Last event: ${escapeHtml(when)}${errBit}`;
+    } else {
+      el.innerHTML = `<span class="status-chip warn">Not configured</span> Add your access token below to turn on server-side tracking.`;
+    }
+  } catch (e) {
+    el.innerHTML = `<span class="status-chip warn">Status unavailable</span> ${escapeHtml(e.message || '')}`;
+  }
+}
+
+function bindCapiSettings(){
+  const form = $('#capiForm');
+  if (form && !form.dataset.bound) {
+    form.dataset.bound = '1';
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      const msg = $('#capiMsg'), input = $('#capiToken');
+      const token = String(input && input.value || '').trim();
+      if (!token) { if (msg) msg.textContent = 'Paste a token first.'; return; }
+      try {
+        if (msg) msg.textContent = 'Saving…';
+        await adminRequest('/capi/token', { method: 'POST', json: { token } });
+        if (input) input.value = '';
+        if (msg) msg.textContent = 'Saved. Server-side tracking is active.';
+        loadCapiStatus();
+      } catch (err) { if (msg) msg.textContent = err.message || 'Could not save token.'; }
+    });
+  }
+  const removeBtn = $('#capiRemove');
+  if (removeBtn && !removeBtn.dataset.bound) {
+    removeBtn.dataset.bound = '1';
+    removeBtn.addEventListener('click', async () => {
+      const msg = $('#capiMsg');
+      if (!confirm('Remove the Conversions API token? Server-side Lead events will stop.')) return;
+      try {
+        await adminRequest('/capi/token', { method: 'POST', json: { token: '' } });
+        if (msg) msg.textContent = 'Token removed.';
+        loadCapiStatus();
+      } catch (err) { if (msg) msg.textContent = err.message || 'Could not remove token.'; }
+    });
+  }
+  loadCapiStatus();
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
   await protect();
   await login();
   tabs();
+  applyRoleUi();
   dashboard();
+  bindAdminUserForm();
+  bindCapiSettings();
 });
 
 

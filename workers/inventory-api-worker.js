@@ -4,7 +4,7 @@
 // - INVENTORY_KV: KV namespace
 // - VEHICLE_IMAGES: R2 bucket
 // - API_TOKEN: secret text variable for Listing Studio / inventory uploads
-// - ADMIN_PASSWORD: secret text variable for initial admin login
+// - ADMIN_USERS_JSON: secret JSON array used to seed admin/sales users
 // - ADMIN_SESSION_SECRET: secret text variable used to sign admin sessions
 // Optional email notification secrets:
 // - RESEND_API_KEY: Resend API key
@@ -20,9 +20,10 @@
 // POST /inventory              Authorization: Bearer <API_TOKEN>
 //
 // Admin auth:
-// POST /admin/login            { password }
+// POST /admin/login            { username, password }
 // GET  /admin/session          Authorization: Bearer <session>
-// POST /admin/change-password  Authorization: Bearer <session>
+// GET  /admin/users            Authorization: Bearer <admin-session>
+// POST /admin/users            Authorization: Bearer <admin-session>
 //
 // Admin clients:
 // POST   /clients              Authorization: Bearer <admin-session>
@@ -32,12 +33,21 @@
 const INVENTORY_KEY = "inventory";
 const CLIENTS_KEY = "clients_data";
 const LEADS_KEY = "finance_leads_v1";
+const ADMIN_USERS_KEY = "admin_users_v1";
 const ADMIN_PASSWORD_HASH_KEY = "admin_password_hash_v1";
 const ADMIN_PASSWORD_SALT_KEY = "admin_password_salt_v1";
 const SESSION_TTL_SECONDS = 60 * 60 * 12; // 12 hours
+const DEDUPE_WINDOW_DAYS = 30;
+// Every website lead is delivered to this admin account only. Override with the LEAD_OWNER_ID variable.
+const DEFAULT_LEAD_OWNER_ID = "besal";
+
+// Meta Conversions API (server-side events)
+const META_PIXEL_ID = "1078447861507419";
+const CAPI_TOKEN_KEY = "meta_capi_token_v1";   // write-only: set from dashboard, never returned
+const CAPI_META_KEY = "meta_capi_meta_v1";     // last send status for the dashboard
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
     if (request.method === "OPTIONS") {
@@ -74,10 +84,20 @@ export default {
         const body = await request.json().catch(() => ({}));
         const input = body.lead || body;
         const lead = cleanLead(input, request);
+        await assignToLeadOwner(env, lead);
         const leads = await getLeads(env);
+        const duplicate = findDuplicateLead(leads, lead);
+        if (duplicate) {
+          mergeDuplicateLead(duplicate, lead);
+          await env.INVENTORY_KV.put(LEADS_KEY, JSON.stringify(leads));
+          return json({ ok: true, leadId: duplicate.id, duplicate: true });
+        }
         leads.unshift(lead);
         await env.INVENTORY_KV.put(LEADS_KEY, JSON.stringify(leads));
-        return json({ ok: true, leadId: lead.id });
+        // Fire the server-side Lead event without delaying the response.
+        if (ctx && ctx.waitUntil) ctx.waitUntil(sendCapiLead(env, lead));
+        else await sendCapiLead(env, lead);
+        return json({ ok: true, leadId: lead.id, duplicate: false });
       }
 
       if (url.pathname.startsWith("/images/") && request.method === "GET") {
@@ -98,34 +118,47 @@ export default {
       // ─────────────────────────────────────────────
       if (url.pathname === "/admin/login" && request.method === "POST") {
         const body = await request.json().catch(() => ({}));
+        const username = String(body.username || "").trim();
         const password = String(body.password || "");
-        const ok = await checkAdminPassword(env, password);
-        if (!ok) return json({ ok: false, error: "Invalid password" }, 401);
+        const user = await checkUserPassword(env, username, password);
+        if (!user) return json({ ok: false, error: "Invalid username or password" }, 401);
 
         const expiresAt = Math.floor(Date.now() / 1000) + SESSION_TTL_SECONDS;
-        const token = await signSession(env, { role: "admin", exp: expiresAt });
+        const token = await signSession(env, {
+          userId: user.id,
+          username: user.username,
+          displayName: user.displayName,
+          role: user.role,
+          exp: expiresAt
+        });
 
         return json({
           ok: true,
           token,
           expiresAt,
-          expiresInSeconds: SESSION_TTL_SECONDS
+          expiresInSeconds: SESSION_TTL_SECONDS,
+          user: publicUser(user)
         });
       }
 
       if (url.pathname === "/admin/session" && request.method === "GET") {
-        await requireAdminSession(request, env);
-        return json({ ok: true, role: "admin" });
+        const session = await requireSession(request, env);
+        return json({ ok: true, user: {
+          userId: session.userId,
+          username: session.username,
+          displayName: session.displayName,
+          role: session.role
+        }, role: session.role });
       }
 
       if (url.pathname === "/admin/change-password" && request.method === "POST") {
-        await requireAdminSession(request, env);
+        const session = await requireSession(request, env);
 
         const body = await request.json().catch(() => ({}));
         const currentPassword = String(body.currentPassword || "");
         const newPassword = String(body.newPassword || "");
 
-        if (!(await checkAdminPassword(env, currentPassword))) {
+        if (!(await checkUserPassword(env, session.username, currentPassword))) {
           return json({ ok: false, error: "Current password is incorrect" }, 401);
         }
 
@@ -133,38 +166,102 @@ export default {
           return json({ ok: false, error: "New password must be at least 12 characters" }, 400);
         }
 
-        await saveAdminPassword(env, newPassword);
+        await saveUserPassword(env, session.userId, newPassword);
         return json({ ok: true });
       }
 
+      if (url.pathname === "/admin/users" && request.method === "GET") {
+        await requireAdminSession(request, env);
+        const users = await getAdminUsers(env);
+        return json({ ok: true, users: users.map(publicUser) });
+      }
+
+      if (url.pathname === "/admin/users" && request.method === "POST") {
+        await requireAdminSession(request, env);
+        const body = await request.json().catch(() => ({}));
+        const user = await createAdminUser(env, body);
+        return json({ ok: true, user: publicUser(user) }, 201);
+      }
+
+      if (url.pathname === "/admin/capi/status" && request.method === "GET") {
+        await requireAdminSession(request, env);
+        const token = await getCapiToken(env);
+        let info = {};
+        try { info = JSON.parse(await env.INVENTORY_KV.get(CAPI_META_KEY) || "{}"); } catch (e) {}
+        return json({
+          ok: true,
+          configured: !!token,
+          pixelId: META_PIXEL_ID,
+          lastEventAt: info.lastEventAt || null,
+          lastStatus: info.lastStatus || null,
+          lastError: info.lastError || null
+        });
+      }
+
+      if (url.pathname === "/admin/capi/token" && request.method === "POST") {
+        await requireAdminSession(request, env);
+        const body = await request.json().catch(() => ({}));
+        const token = String(body.token || "").trim();
+        if (token) {
+          if (token.length < 20) return json({ error: "That doesn't look like a valid access token." }, 400);
+          await env.INVENTORY_KV.put(CAPI_TOKEN_KEY, token);
+        } else {
+          await env.INVENTORY_KV.delete(CAPI_TOKEN_KEY);
+        }
+        return json({ ok: true, configured: !!token });
+      }
 
 
       if (url.pathname === "/admin/leads" && request.method === "GET") {
-        await requireAdminSession(request, env);
-        return json({ ok: true, leads: await getLeads(env) });
+        const session = await requireSession(request, env);
+        const leads = await getLeads(env);
+        const visible = isLeadOwner(env, session) ? leads : leads.filter(l => String(l.assignedTo || "") === String(session.userId));
+        return json({ ok: true, leads: visible });
       }
 
       if (url.pathname.startsWith("/admin/leads/") && request.method === "PATCH") {
-        await requireAdminSession(request, env);
+        const session = await requireSession(request, env);
         const id = decodeURIComponent(url.pathname.replace("/admin/leads/", ""));
         const body = await request.json().catch(() => ({}));
         const leads = await getLeads(env);
         const index = leads.findIndex(x => x.id === id);
         if (index < 0) return json({ error: "Lead not found" }, 404);
+
+        const owner = isLeadOwner(env, session);
+        if (!owner && String(leads[index].assignedTo || "") !== String(session.userId)) {
+          return json({ error: "You can only update leads assigned to you." }, 403);
+        }
+
         if (Object.prototype.hasOwnProperty.call(body, "status")) leads[index].status = body.status;
         if (Object.prototype.hasOwnProperty.call(body, "notes")) leads[index].notes = body.notes;
-        if (Object.prototype.hasOwnProperty.call(body, "assignedTo")) leads[index].assignedTo = body.assignedTo;
-        if (Object.prototype.hasOwnProperty.call(body, "attachedVehicleId")) leads[index].attachedVehicleId = body.attachedVehicleId;
-        if (Object.prototype.hasOwnProperty.call(body, "attachedVehicleTitle")) leads[index].attachedVehicleTitle = body.attachedVehicleTitle;
-        if (Object.prototype.hasOwnProperty.call(body, "attachedVehiclePrice")) leads[index].attachedVehiclePrice = Number(body.attachedVehiclePrice || 0);
-        if (Object.prototype.hasOwnProperty.call(body, "attachedVehicleStock")) leads[index].attachedVehicleStock = body.attachedVehicleStock;
+
+        if (owner) {
+          if (Object.prototype.hasOwnProperty.call(body, "assignedTo")) {
+            const users = await getAdminUsers(env);
+            const assignedTo = String(body.assignedTo || "").trim();
+            const assignedUser = assignedTo ? users.find(u => u.id === assignedTo) : null;
+            if (assignedTo && !assignedUser) return json({ error: "Assigned user not found" }, 400);
+            leads[index].assignedTo = assignedTo;
+            leads[index].assignedToName = assignedUser ? assignedUser.displayName : "";
+            leads[index].assignedAt = assignedTo ? new Date().toISOString() : "";
+            leads[index].assignedBy = assignedTo ? session.userId : "";
+          }
+          if (Object.prototype.hasOwnProperty.call(body, "attachedVehicleId")) leads[index].attachedVehicleId = body.attachedVehicleId;
+          if (Object.prototype.hasOwnProperty.call(body, "attachedVehicleTitle")) leads[index].attachedVehicleTitle = body.attachedVehicleTitle;
+          if (Object.prototype.hasOwnProperty.call(body, "attachedVehiclePrice")) leads[index].attachedVehiclePrice = Number(body.attachedVehiclePrice || 0);
+          if (Object.prototype.hasOwnProperty.call(body, "attachedVehicleStock")) leads[index].attachedVehicleStock = body.attachedVehicleStock;
+        } else if (Object.prototype.hasOwnProperty.call(body, "assignedTo")) {
+          return json({ error: "Only the lead owner can reassign leads." }, 403);
+        }
+
         leads[index].updatedAt = new Date().toISOString();
         await env.INVENTORY_KV.put(LEADS_KEY, JSON.stringify(leads));
         return json({ ok: true, lead: leads[index] });
       }
 
       if (url.pathname.startsWith("/admin/leads/") && request.method === "DELETE") {
-        await requireAdminSession(request, env);
+        const session = await requireAdminSession(request, env);
+        if (!isLeadOwner(env, session)) return json({ error: "Only the lead owner can delete leads." }, 403);
         const id = decodeURIComponent(url.pathname.replace("/admin/leads/", ""));
         const leads = await getLeads(env);
         const next = leads.filter(x => x.id !== id);
@@ -515,6 +612,7 @@ function cleanLead(input, request) {
   const now = new Date().toISOString();
   const id = `lead-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
   const text = (v, max = 500) => String(v || "").trim().slice(0, max);
+  const tracking = normalizeTracking(input, request, now);
   const lead = {
     id, status: "NEW LEAD",
     firstName: text(input.firstName, 80), lastName: text(input.lastName, 80),
@@ -525,22 +623,130 @@ function cleanLead(input, request) {
     downPayment: text(input.downPayment, 80), tradeIn: text(input.tradeIn, 80),
     bestTime: text(input.bestTime, 80), contactPreference: text(input.contactPreference, 80),
     notes: text(input.notes, 1000), consent: !!input.consent,
-    source: text(input.source || "website", 100), campaign: text(input.campaign, 160),
-    adset: text(input.adset, 160), ad: text(input.ad, 160),
-    placement: text(input.placement, 120), fbclid: text(input.fbclid, 250),
-    utm_source: text(input.utm_source, 120), utm_campaign: text(input.utm_campaign, 160),
-    utm_medium: text(input.utm_medium, 120), utm_content: text(input.utm_content, 160),
+    source: text(tracking.source || "website", 100), sourceType: text(tracking.sourceType, 80),
+    campaign: text(tracking.campaign, 160), adset: text(tracking.adset, 160), ad: text(tracking.ad, 160),
+    placement: text(tracking.placement, 120), fbclid: text(tracking.fbclid, 250),
+    eventId: text(input.eventId || input.event_id, 80), fbp: text(input.fbp, 120), fbc: text(input.fbc, 260),
+    referrer: text(tracking.referrer, 500), landingPage: text(tracking.landingPage, 500),
+    utm_source: text(tracking.utm_source, 120), utm_campaign: text(tracking.utm_campaign, 160),
+    utm_medium: text(tracking.utm_medium, 120), utm_content: text(tracking.utm_content, 160),
+    utm_term: text(tracking.utm_term, 160),
     vehicleSearch: text(input.vehicleSearch || input.search, 160), budgetMax: text(input.budgetMax, 80),
-    pageUrl: text(input.pageUrl, 500), ipHint: request.headers.get("CF-Connecting-IP") || "",
+    pageUrl: text(tracking.pageUrl, 500), submittedAt: tracking.submittedAt,
+    ipHint: request.headers.get("CF-Connecting-IP") || "",
     userAgent: text(request.headers.get("User-Agent"), 250),
-    createdAt: now, updatedAt: now, assignedTo: ""
+    createdAt: now, updatedAt: now, assignedTo: "", assignedToName: "", assignedAt: "", assignedBy: "",
+    duplicateCount: 0, lastSubmittedAt: now
   };
-  if (!lead.firstName || !lead.phone || !lead.email || !lead.consent) {
+  if (!lead.firstName || !(lead.phone || lead.email) || !lead.consent) {
     const err = new Error("Missing required lead fields");
     err.status = 400;
     throw err;
   }
   return lead;
+}
+
+function leadOwnerId(env) {
+  return String(env.LEAD_OWNER_ID || DEFAULT_LEAD_OWNER_ID).trim().toLowerCase();
+}
+
+function isLeadOwner(env, session) {
+  return String(session.userId || "").toLowerCase() === leadOwnerId(env);
+}
+
+async function assignToLeadOwner(env, lead) {
+  const ownerId = leadOwnerId(env);
+  const users = await getAdminUsers(env);
+  const owner = users.find(u => String(u.id).toLowerCase() === ownerId);
+  lead.assignedTo = owner ? owner.id : ownerId;
+  lead.assignedToName = owner ? owner.displayName : ownerId;
+  lead.assignedAt = lead.createdAt;
+  lead.assignedBy = "website";
+}
+
+function normalizeTracking(input, request, now) {
+  const text = (v, max = 500) => String(v || "").trim().slice(0, max);
+  const referrer = text(input.referrer || request.headers.get("Referer"), 500);
+  const pageUrl = text(input.pageUrl, 500);
+  const landingPage = text(input.landingPage || pageUrl, 500);
+  const utm_source = text(input.utm_source, 120);
+  const fbclid = text(input.fbclid, 250);
+  const source = text(input.source || utm_source || "website", 100);
+  const campaign = text(input.campaign || input.utm_campaign, 160);
+  const tracking = {
+    source,
+    sourceType: "",
+    utm_source,
+    utm_medium: text(input.utm_medium, 120),
+    utm_campaign: text(input.utm_campaign, 160),
+    utm_content: text(input.utm_content, 160),
+    utm_term: text(input.utm_term, 160),
+    campaign,
+    adset: text(input.adset, 160),
+    ad: text(input.ad, 160),
+    placement: text(input.placement, 120),
+    fbclid,
+    referrer,
+    landingPage,
+    pageUrl,
+    submittedAt: text(input.submittedAt || now, 80)
+  };
+  tracking.sourceType = classifySourceType(tracking);
+  return tracking;
+}
+
+function classifySourceType(t) {
+  const source = String(t.utm_source || t.source || "").toLowerCase();
+  const ref = String(t.referrer || "").toLowerCase();
+  const hasCampaign = !!(t.utm_source || t.utm_medium || t.utm_campaign || t.campaign || t.adset || t.ad || t.placement || t.fbclid);
+  if (t.fbclid || ["facebook", "fb", "meta", "instagram", "ig"].includes(source)) return "paid_facebook";
+  if (!hasCampaign && !ref) return "direct_or_organic";
+  if (/(^|\/\/|\.)(google|bing|yahoo|duckduckgo)\./.test(ref)) return "organic_search";
+  return "website_other";
+}
+
+function normalizedPhone(value) {
+  return String(value || "").replace(/\D/g, "").replace(/^1(?=\d{10}$)/, "");
+}
+
+function normalizedEmail(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function findDuplicateLead(leads, lead) {
+  const email = normalizedEmail(lead.email);
+  const phone = normalizedPhone(lead.phone);
+  const cutoff = Date.now() - DEDUPE_WINDOW_DAYS * 24 * 60 * 60 * 1000;
+  return leads.find(existing => {
+    const created = Date.parse(existing.lastSubmittedAt || existing.createdAt || 0);
+    if (created && created < cutoff) return false;
+    const sameEmail = email && normalizedEmail(existing.email) === email;
+    const samePhone = phone && normalizedPhone(existing.phone) === phone;
+    return sameEmail || samePhone;
+  });
+}
+
+function mergeDuplicateLead(existing, latest) {
+  const keep = {
+    id: existing.id,
+    createdAt: existing.createdAt,
+    status: existing.status,
+    notes: existing.notes,
+    assignedTo: existing.assignedTo || "",
+    assignedToName: existing.assignedToName || "",
+    assignedAt: existing.assignedAt || "",
+    assignedBy: existing.assignedBy || "",
+    attachedVehicleId: existing.attachedVehicleId || "",
+    attachedVehicleTitle: existing.attachedVehicleTitle || "",
+    attachedVehiclePrice: existing.attachedVehiclePrice || 0,
+    attachedVehicleStock: existing.attachedVehicleStock || ""
+  };
+
+  Object.assign(existing, latest, keep, {
+    duplicateCount: Number(existing.duplicateCount || 0) + 1,
+    lastSubmittedAt: latest.submittedAt || latest.createdAt || new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  });
 }
 
 // ─────────────────────────────────────────────
@@ -556,13 +762,13 @@ async function requireInventoryToken(request, env) {
   }
 }
 
-async function requireAdminSession(request, env) {
+async function requireSession(request, env) {
   const auth = request.headers.get("Authorization") || "";
   const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
   const payload = await verifySession(env, token);
 
-  if (!payload || payload.role !== "admin") {
-    const err = new Error("Admin login required");
+  if (!payload || !payload.userId) {
+    const err = new Error("Login required");
     err.status = 401;
     throw err;
   }
@@ -570,25 +776,165 @@ async function requireAdminSession(request, env) {
   return payload;
 }
 
-async function checkAdminPassword(env, password) {
-  if (!password) return false;
-
-  const savedHash = await env.INVENTORY_KV.get(ADMIN_PASSWORD_HASH_KEY);
-  const savedSalt = await env.INVENTORY_KV.get(ADMIN_PASSWORD_SALT_KEY);
-
-  if (savedHash && savedSalt) {
-    const testHash = await sha256(`${savedSalt}:${password}`);
-    return timingSafeEqual(testHash, savedHash);
+async function requireAdminSession(request, env) {
+  const payload = await requireSession(request, env);
+  if (payload.role !== "admin") {
+    const err = new Error("Admin access required");
+    err.status = 403;
+    throw err;
   }
-
-  return !!env.ADMIN_PASSWORD && password === env.ADMIN_PASSWORD;
+  return payload;
 }
 
-async function saveAdminPassword(env, password) {
+async function getAdminUsers(env) {
+  const raw = await env.INVENTORY_KV.get(ADMIN_USERS_KEY);
+  if (raw) {
+    const users = JSON.parse(raw);
+    return Array.isArray(users) ? users : [];
+  }
+
+  const seeded = await seedAdminUsers(env);
+  if (seeded.length) return seeded;
+
+  const legacyHash = await env.INVENTORY_KV.get(ADMIN_PASSWORD_HASH_KEY);
+  const legacySalt = await env.INVENTORY_KV.get(ADMIN_PASSWORD_SALT_KEY);
+  if (env.ADMIN_PASSWORD || (legacyHash && legacySalt)) {
+    const salt = legacySalt || crypto.randomUUID();
+    const passwordHash = legacyHash || await sha256(`${salt}:${env.ADMIN_PASSWORD}`);
+    const users = [{
+      id: "admin",
+      username: "admin",
+      displayName: "Admin",
+      role: "admin",
+      salt,
+      passwordHash,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }];
+    await env.INVENTORY_KV.put(ADMIN_USERS_KEY, JSON.stringify(users));
+    return users;
+  }
+
+  return [];
+}
+
+async function seedAdminUsers(env) {
+  if (!env.ADMIN_USERS_JSON) return [];
+  let input;
+  try {
+    input = JSON.parse(env.ADMIN_USERS_JSON);
+  } catch {
+    const err = new Error("ADMIN_USERS_JSON is not valid JSON");
+    err.status = 500;
+    throw err;
+  }
+
+  const source = Array.isArray(input) ? input : input.users;
+  if (!Array.isArray(source) || !source.length) return [];
+
+  const now = new Date().toISOString();
+  const users = [];
+  for (const item of source) {
+    const username = String(item.username || "").trim().toLowerCase();
+    const password = String(item.password || "");
+    const displayName = String(item.displayName || username || "User").trim();
+    const role = String(item.role || "sales").trim().toLowerCase() === "admin" ? "admin" : "sales";
+    if (!username || !password) continue;
+    const salt = crypto.randomUUID();
+    users.push({
+      id: String(item.id || makeSlug(username || displayName)),
+      username,
+      displayName,
+      role,
+      salt,
+      passwordHash: await sha256(`${salt}:${password}`),
+      createdAt: now,
+      updatedAt: now
+    });
+  }
+
+  if (users.length) await env.INVENTORY_KV.put(ADMIN_USERS_KEY, JSON.stringify(users));
+  return users;
+}
+
+async function checkUserPassword(env, username, password) {
+  if (!username || !password) return null;
+  const users = await getAdminUsers(env);
+  const user = users.find(u => String(u.username || "").toLowerCase() === String(username).trim().toLowerCase());
+  if (!user || !user.salt || !user.passwordHash) return null;
+  const testHash = await sha256(`${user.salt}:${password}`);
+  return timingSafeEqual(testHash, user.passwordHash) ? user : null;
+}
+
+async function createAdminUser(env, input) {
+  const users = await getAdminUsers(env);
+  const username = String(input.username || "").trim().toLowerCase();
+  const displayName = String(input.displayName || "").trim();
+  const password = String(input.password || "");
+  const roleRaw = String(input.role || "sales").trim().toLowerCase();
+  const role = roleRaw === "admin" || roleRaw === "master_admin" ? "admin" : "sales";
+
+  if (!displayName) {
+    const err = new Error("Display name is required");
+    err.status = 400;
+    throw err;
+  }
+  if (!username || !/^[a-z0-9._-]{3,40}$/.test(username)) {
+    const err = new Error("Username must be 3-40 characters using letters, numbers, dot, dash, or underscore");
+    err.status = 400;
+    throw err;
+  }
+  if (password.length < 12) {
+    const err = new Error("Password must be at least 12 characters");
+    err.status = 400;
+    throw err;
+  }
+  if (users.some(u => String(u.username || "").toLowerCase() === username)) {
+    const err = new Error("Username already exists");
+    err.status = 409;
+    throw err;
+  }
+
+  const now = new Date().toISOString();
   const salt = crypto.randomUUID();
-  const hash = await sha256(`${salt}:${password}`);
-  await env.INVENTORY_KV.put(ADMIN_PASSWORD_SALT_KEY, salt);
-  await env.INVENTORY_KV.put(ADMIN_PASSWORD_HASH_KEY, hash);
+  const user = {
+    id: makeSlug(username),
+    username,
+    displayName,
+    role,
+    salt,
+    passwordHash: await sha256(`${salt}:${password}`),
+    createdAt: now,
+    updatedAt: now
+  };
+
+  users.push(user);
+  await env.INVENTORY_KV.put(ADMIN_USERS_KEY, JSON.stringify(users));
+  return user;
+}
+
+async function saveUserPassword(env, userId, password) {
+  const users = await getAdminUsers(env);
+  const index = users.findIndex(u => String(u.id) === String(userId));
+  if (index < 0) {
+    const err = new Error("User not found");
+    err.status = 404;
+    throw err;
+  }
+  users[index].salt = crypto.randomUUID();
+  users[index].passwordHash = await sha256(`${users[index].salt}:${password}`);
+  users[index].updatedAt = new Date().toISOString();
+  await env.INVENTORY_KV.put(ADMIN_USERS_KEY, JSON.stringify(users));
+}
+
+function publicUser(user) {
+  return {
+    id: user.id,
+    userId: user.id,
+    username: user.username,
+    displayName: user.displayName,
+    role: user.role
+  };
 }
 
 async function signSession(env, payload) {
@@ -631,6 +977,74 @@ async function hmac(secret, value) {
 async function sha256(value) {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
   return bufferToHex(digest);
+}
+
+// ─────────────────────────────────────────────
+// Meta Conversions API
+// ─────────────────────────────────────────────
+async function getCapiToken(env) {
+  const kv = await env.INVENTORY_KV.get(CAPI_TOKEN_KEY);
+  return (kv || env.META_CAPI_TOKEN || "").trim();
+}
+
+// Meta requires user identifiers to be SHA-256 hex of normalized (trimmed, lowercased) values.
+async function hashField(value) {
+  const v = String(value || "").trim().toLowerCase();
+  return v ? await sha256(v) : "";
+}
+
+async function sendCapiLead(env, lead) {
+  let status = "skipped";
+  try {
+    const token = await getCapiToken(env);
+    if (!token) return;
+
+    const ud = {};
+    const em = await hashField(lead.email);                                   if (em) ud.em = [em];
+    const phDigits = String(lead.phone || "").replace(/[^0-9]/g, "");
+    if (phDigits) ud.ph = [await sha256(phDigits)];
+    const fn = await hashField(lead.firstName);                               if (fn) ud.fn = [fn];
+    const ln = await hashField(lead.lastName);                                if (ln) ud.ln = [ln];
+    const ct = await hashField(String(lead.city || "").replace(/\s+/g, "")); if (ct) ud.ct = [ct];
+    const st = await hashField(String(lead.province || "").replace(/\s+/g, "")); if (st) ud.st = [st];
+    if (lead.ipHint) ud.client_ip_address = lead.ipHint;
+    if (lead.userAgent) ud.client_user_agent = lead.userAgent;
+    if (lead.fbp) ud.fbp = lead.fbp;
+    let fbc = lead.fbc;
+    if (!fbc && lead.fbclid) fbc = `fb.1.${Math.floor(Date.now() / 1000)}.${lead.fbclid}`;
+    if (fbc) ud.fbc = fbc;
+
+    const event = {
+      event_name: "Lead",
+      event_time: Math.floor(Date.now() / 1000),
+      event_id: lead.eventId || lead.id,           // dedupes against the browser pixel
+      action_source: "website",
+      event_source_url: lead.pageUrl || lead.landingPage || "https://mapleleaf-motors.ca/",
+      user_data: ud,
+      custom_data: { content_name: "Finance Application", content_category: lead.vehicleType || "" }
+    };
+
+    const res = await fetch(`https://graph.facebook.com/v21.0/${META_PIXEL_ID}/events?access_token=${encodeURIComponent(token)}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ data: [event] })
+    });
+    const out = await res.json().catch(() => ({}));
+    status = res.ok ? "ok" : "error";
+    await env.INVENTORY_KV.put(CAPI_META_KEY, JSON.stringify({
+      lastEventAt: new Date().toISOString(),
+      lastStatus: status,
+      lastError: res.ok ? null : ((out.error && out.error.message) || `HTTP ${res.status}`)
+    }));
+  } catch (e) {
+    try {
+      await env.INVENTORY_KV.put(CAPI_META_KEY, JSON.stringify({
+        lastEventAt: new Date().toISOString(),
+        lastStatus: "error",
+        lastError: String((e && e.message) || e)
+      }));
+    } catch (_) {}
+  }
 }
 
 function timingSafeEqual(a, b) {

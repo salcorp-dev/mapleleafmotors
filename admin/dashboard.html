@@ -4,7 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Command Center | Maple Leaf Motors</title>
-<link rel="stylesheet" href="../assets/css/styles.css">
+<link rel="stylesheet" href="../assets/css/styles.css?v=14">
+<link rel="stylesheet" href="../assets/css/design.css?v=14">
 <link rel="icon" href="../assets/images/maple-leaf-motors-logo.png">
 <style>
 /* ── Admin Base ── */
@@ -216,7 +217,7 @@
 .lead-mini span { color: var(--muted); }
 
 /* ── Lead stat cards ── */
-.lead-stat-strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 18px; }
+.lead-stat-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 18px; }
 .lead-stat-card {
   background: #fff; border: 1px solid var(--line); border-radius: 14px;
   padding: 16px 18px; box-shadow: 0 1px 4px rgba(16,24,40,.04);
@@ -299,6 +300,7 @@
   .admin-modal-actions{display:flex;justify-content:flex-end;gap:10px;padding:18px 24px;border-top:1px solid #e5e7eb;background:#f8fafc}
   .checkbox-row{display:flex;align-items:center;gap:10px;font:700 14px/1 var(--font-ui,system-ui)}
   .checkbox-row input{width:auto!important}
+  @media(max-width:720px){#adminUserForm{grid-template-columns:1fr!important}}
   @media(max-width:720px){.admin-modal-grid{grid-template-columns:1fr}.live-inventory-toolbar{align-items:stretch}.live-inventory-toolbar>*{width:100%}}
 
 
@@ -320,7 +322,9 @@
 
 .muted-row{opacity:.62;background:#f8fafc;}
 .client-preview img{width:96px;height:64px;object-fit:cover;border-radius:10px;margin:6px 6px 0 0;border:1px solid #e5e7eb;}
+
 </style>
+<link rel="stylesheet" href="../assets/css/admin.css?v=14">
 </head>
 <body>
 <div class="admin-shell">
@@ -343,26 +347,44 @@
       Pipeline
     </button>
 
-    <span class="sidebar-section">Inventory</span>
-    <button class="sidebar-link" data-goto="inventory">
+    <span class="sidebar-section" data-admin-only>Marketing</span>
+    <button class="sidebar-link" data-goto="marketing" data-admin-only>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
+      Marketing
+    </button>
+
+    <span class="sidebar-section" data-admin-only>Inventory</span>
+    <button class="sidebar-link" data-goto="inventory" data-admin-only>
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
       Live Inventory
     </button>
 
-    <span class="sidebar-section">Content</span>
-    <button class="sidebar-link" data-goto="clients">
+    <span class="sidebar-section" data-admin-only>Content</span>
+    <button class="sidebar-link" data-goto="clients" data-admin-only>
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
       Our Clients
     </button>
+    <button class="sidebar-link" data-goto="accounts" data-admin-only>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+      Accounts
+    </button>
     <button class="sidebar-link" data-goto="settings">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-      Import
+      Account
+    </button>
+
+    <span class="sidebar-section">Help</span>
+    <button class="sidebar-link" data-goto="howitworks">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      How It Works
     </button>
 
     <div class="sidebar-spacer"></div>
     <div class="sidebar-bottom">
       <a href="../index.html">← View Website</a>
+      <div id="adminUserBadge" class="muted" style="font-family:var(--font-ui);font-size:12px;text-align:center;color:#9ca3af;padding:6px 8px;"></div>
       <button id="exportAll">Export Data</button>
+      <button id="logoutAdmin" type="button">Logout</button>
     </div>
   </aside>
 
@@ -405,9 +427,12 @@
     <div class="tabs">
       <button class="tab active" data-tab="leads">Finance Leads</button>
       <button class="tab" data-tab="pipeline">Pipeline</button>
-      <button class="tab" data-tab="inventory">Live Inventory</button>
-      <button class="tab" data-tab="clients">Our Clients</button>
-      <button class="tab" data-tab="settings">Import</button>
+      <button class="tab" data-tab="marketing" data-admin-only>Marketing</button>
+      <button class="tab" data-tab="inventory" data-admin-only>Live Inventory</button>
+      <button class="tab" data-tab="clients" data-admin-only>Our Clients</button>
+      <button class="tab" data-tab="accounts" data-admin-only>Accounts</button>
+      <button class="tab" data-tab="settings">Account</button>
+      <button class="tab" data-tab="howitworks">How It Works</button>
     </div>
 
     <!-- ===== LEADS TAB ===== -->
@@ -415,7 +440,7 @@
       <div class="section-toolbar">
         <div>
           <h2>Finance Leads</h2>
-          <p>Leads from the Start Approval funnel. Update status, add notes, export CSV.</p>
+          <p>Leads from the Start Approval funnel. Update status, assignment, notes, and export CSV.</p>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
           <div class="view-toggle">
@@ -433,6 +458,13 @@
         <div class="lead-stat-card"><strong id="leadStatTotal">0</strong><span>Total leads</span></div>
         <div class="lead-stat-card"><strong id="leadStatNew">0</strong><span>New leads</span></div>
         <div class="lead-stat-card"><strong id="leadStatApproved">0</strong><span>Approved</span></div>
+        <div class="lead-stat-card"><strong id="leadStatUnassigned">0</strong><span>Unassigned</span></div>
+      </div>
+
+      <div class="admin-card" id="campaignLinksHelper" data-admin-only style="margin-bottom:16px;">
+        <h3>Campaign Links</h3>
+        <p class="admin-help">Facebook ad URL format: <code>https://YOURDOMAIN/get-approved.html?utm_source=facebook&amp;utm_medium=paid_social&amp;utm_campaign={{campaign.name}}&amp;adset={{adset.name}}&amp;ad={{ad.name}}&amp;placement={{placement}}</code></p>
+        <button class="btn btn-sm btn-outline" id="copyCampaignLink" type="button">Copy Base Link</button>
       </div>
 
       <!-- Pipeline funnel bar chart -->
@@ -457,6 +489,10 @@
           <option>VEHICLE SELECTED</option>
           <option>DELIVERED</option>
           <option>LOST</option>
+        </select>
+        <select id="leadAssignedFilter" data-admin-only>
+          <option value="">All assigned users</option>
+          <option value="__unassigned">Unassigned</option>
         </select>
       </div>
 
@@ -492,6 +528,55 @@
 
       <!-- Kanban board -->
       <div class="kanban-board" id="kanban"></div>
+    </section>
+
+
+    <!-- ===== MARKETING TAB ===== -->
+    <section id="marketing" class="admin-section" data-admin-only>
+      <div class="section-toolbar">
+        <div>
+          <h2>Marketing &amp; Meta Pixel</h2>
+          <p>Attribution from your website leads. Full ad metrics (spend, reach, CPL) live in Meta Events Manager.</p>
+        </div>
+        <div class="view-toggle">
+          <a class="view-btn" href="https://business.facebook.com/events_manager2/list/pixel/1078447861507419/overview" target="_blank" rel="noopener">Events Manager ↗</a>
+          <a class="view-btn" href="https://www.facebook.com/adsmanager/manage/campaigns" target="_blank" rel="noopener">Ads Manager ↗</a>
+        </div>
+      </div>
+
+      <div class="admin-card" style="margin-bottom:16px;">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+          <span class="live-status-dot">● Meta Pixel installed</span>
+          <span class="admin-help">Pixel ID <strong>1078447861507419</strong> — fires <strong>PageView</strong> on every public page and a <strong>Lead</strong> event on each finance submission. Numbers below are from leads captured on this site.</span>
+        </div>
+      </div>
+
+      <div class="lead-stat-strip" id="marketingStats"></div>
+
+      <div class="client-admin-grid">
+        <div class="admin-card">
+          <h3>Leads by source</h3>
+          <p class="sub">Where your finance leads came from.</p>
+          <div class="funnel-bars" id="marketingSourceBars"></div>
+        </div>
+        <div class="admin-card">
+          <h3>Top campaigns</h3>
+          <p class="sub">Paid campaigns driving leads (utm_campaign / campaign).</p>
+          <div class="table-wrap">
+            <table class="table"><thead><tr><th>Campaign</th><th>Leads</th><th>Approved</th></tr></thead>
+            <tbody id="marketingCampaignRows"></tbody></table>
+          </div>
+        </div>
+      </div>
+
+      <div class="admin-card" style="margin-top:16px;">
+        <h3>Recent paid-social leads</h3>
+        <p class="sub">Most recent leads attributed to Facebook / Instagram.</p>
+        <div class="table-wrap">
+          <table class="table"><thead><tr><th>Name</th><th>When</th><th>Campaign / Ad</th><th>Status</th></tr></thead>
+          <tbody id="marketingPaidRows"></tbody></table>
+        </div>
+      </div>
     </section>
 
 
@@ -537,115 +622,6 @@
     </section>
 
     <div id="vehicleEditModal" class="modal-backdrop" aria-hidden="true">
-      <div class="admin-modal">
-        <form id="vehicleEditForm">
-          <div class="admin-modal-head">
-            <div>
-              <h3 style="margin:0;">Edit Live Vehicle</h3>
-              <p class="admin-help" style="margin:6px 0 0;">Changes save to Cloudflare and update the public website.</p>
-            </div>
-            <button class="btn btn-sm btn-outline" id="closeVehicleEdit" type="button">Close</button>
-          </div>
-          <div class="admin-modal-body">
-            <input type="hidden" name="id">
-            <div class="admin-modal-grid">
-              <input name="year" placeholder="Year">
-              <input name="make" placeholder="Make">
-              <input name="model" placeholder="Model">
-              <input name="trim" placeholder="Trim">
-              <input name="price" placeholder="Price">
-              <input name="mileage" placeholder="Kilometres">
-              <input name="bodyStyle" placeholder="Body style">
-              <input name="drivetrain" placeholder="Drivetrain">
-              <input name="transmission" placeholder="Transmission">
-              <input name="fuel" placeholder="Fuel">
-              <input name="vin" placeholder="VIN">
-              <input name="stockNumber" placeholder="Stock number">
-              <input name="exteriorColor" placeholder="Exterior color">
-              <input name="interiorColor" placeholder="Interior color">
-              <input class="full" name="features" placeholder="Features separated by commas">
-              <textarea class="full" name="description" placeholder="Description" style="min-height:110px;"></textarea>
-
-              <div class="payment-calc-panel">
-                <h4>Payment Calculator</h4>
-                <p>Updates live as you change vehicle price, term, APR, or down payment. Uses 12% Manitoba tax and standard amortization. Biweekly = monthly × 12 ÷ 26.</p>
-                <div class="payment-calc-grid">
-                  <div class="payment-field">
-                    <label>Vehicle Price</label>
-                    <input id="calcVehiclePrice" inputmode="decimal" placeholder="Vehicle price">
-                  </div>
-                  <div class="payment-field">
-                    <label>Term</label>
-                    <select name="financeTermMonths">
-                      <option value="">Default 84 months</option>
-                      <option value="36">36 months</option>
-                      <option value="48">48 months</option>
-                      <option value="60">60 months</option>
-                      <option value="72">72 months</option>
-                      <option value="84" selected>84 months</option>
-                      <option value="96">96 months</option>
-                    </select>
-                  </div>
-                  <div class="payment-field">
-                    <label>Interest Rate</label>
-                    <select name="financeRate">
-                      <option value="">Default 7%</option>
-                      <option value="2.9">2.9%</option>
-                      <option value="4.9">4.9%</option>
-                      <option value="5.9">5.9%</option>
-                      <option value="6.9">6.9%</option>
-                      <option value="7" selected>7%</option>
-                      <option value="8.9">8.9%</option>
-                      <option value="9.9">9.9%</option>
-                      <option value="10.9">10.9%</option>
-                      <option value="12.9">12.9%</option>
-                      <option value="14.9">14.9%</option>
-                    </select>
-                  </div>
-                  <div class="payment-field">
-                    <label>Down Payment</label>
-                    <input name="downPayment" inputmode="decimal" placeholder="0" value="0">
-                  </div>
-                  <div class="payment-field">
-                    <label>Tax Rate</label>
-                    <input name="taxRate" value="12" readonly>
-                  </div>
-                </div>
-                <div class="payment-result-strip">
-                  <div class="payment-result">
-                    <label>Financed With Tax</label>
-                    <strong id="paymentFinancePreview">$0</strong>
-                  </div>
-                  <div class="payment-result">
-                    <label>Monthly</label>
-                    <strong id="paymentMonthlyPreview">$0</strong>
-                  </div>
-                  <div class="payment-result biweekly-final">
-                    <label>Biweekly</label>
-                    <strong id="paymentBiweeklyPreview">$0</strong>
-                  </div>
-                </div>
-                <div class="payment-calc-grid" style="margin-top:12px;">
-                  <input name="monthlyPayment" type="hidden">
-                  <input name="biweeklyPayment" type="hidden">
-                  <input name="weeklyPayment" type="hidden">
-                  <input class="payment-note-input" name="paymentNote" placeholder="Payment note">
-                </div>
-              </div>
-
-              <label class="checkbox-row"><input name="featured" type="checkbox"> Featured vehicle</label>
-              <label class="checkbox-row"><input name="sold" type="checkbox"> Mark as sold</label>
-            </div>
-          </div>
-          <div class="admin-modal-actions">
-            <button class="btn btn-outline" id="cancelVehicleEdit" type="button">Cancel</button>
-            <button class="btn" type="submit">Save Vehicle</button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-<div id="vehicleEditModal" class="modal-backdrop" aria-hidden="true">
       <div class="admin-modal">
         <form id="vehicleEditForm">
           <div class="admin-modal-head">
@@ -830,33 +806,198 @@
       </div>
     </section>
 
-    <!-- ===== SETTINGS/IMPORT TAB ===== -->
-    <section id="settings" class="admin-section">
-      <div class="admin-card">
-        <h3>Admin Login Password</h3>
-        <p class="sub">Change the real admin password used by /admin/. Saved in Cloudflare KV — works across browsers and devices.</p>
-        <form id="adminPasswordForm" style="margin-top:14px;display:grid;gap:10px;max-width:520px;">
-          <input id="currentAdminPassword" type="password" placeholder="Current admin password" required>
-          <input id="newAdminPassword" type="password" placeholder="New admin password (min 12 characters)" required>
-          <input id="confirmAdminPassword" type="password" placeholder="Confirm new admin password" required>
-          <div style="display:flex;gap:10px;flex-wrap:wrap;">
-            <button class="btn" type="submit">Change Admin Password</button>
+    <!-- ===== ACCOUNTS TAB ===== -->
+    <section id="accounts" class="admin-section" data-admin-only>
+      <div class="section-toolbar">
+        <div>
+          <h2>Accounts</h2>
+          <p>Create admin or sales accounts. Admins can assign leads and manage account access.</p>
+        </div>
+      </div>
+
+      <div class="admin-card" style="margin-bottom:16px;">
+        <h3>Create Account</h3>
+        <p class="sub">Passwords are sent only to the Worker and stored as salted hashes in KV.</p>
+        <form id="adminUserForm" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:14px;">
+          <input name="displayName" placeholder="Display name, e.g. Besal" required>
+          <input name="username" placeholder="Username" autocomplete="off" required>
+          <select name="role" required>
+            <option value="sales">Sales user</option>
+            <option value="admin">Admin</option>
+          </select>
+          <input name="password" type="password" placeholder="Temporary password (min 12 characters)" autocomplete="new-password" required>
+          <div style="grid-column:1/-1;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+            <button class="btn" type="submit">Create Account</button>
+            <span id="adminUserFormMsg" class="admin-help"></span>
           </div>
         </form>
-        <p class="admin-help" style="margin-top:10px;">After changing, use the new password on next login.</p>
       </div>
 
       <div class="admin-card">
+        <h3>Current Accounts</h3>
+        <div class="table-wrap" style="margin-top:12px;">
+          <table class="table">
+            <thead><tr><th>Name</th><th>Username</th><th>Role</th></tr></thead>
+            <tbody id="adminUserRows"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== ACCOUNT / IMPORT TAB ===== -->
+    <section id="settings" class="admin-section">
+      <div class="admin-card">
+        <h3>My Login Password</h3>
+        <p class="sub">Change your own password. Saved in Cloudflare KV and used across browsers and devices.</p>
+        <form id="adminPasswordForm" style="margin-top:14px;display:grid;gap:10px;max-width:520px;">
+          <input id="currentAdminPassword" type="password" placeholder="Current password" required>
+          <input id="newAdminPassword" type="password" placeholder="New password (min 12 characters)" required>
+          <input id="confirmAdminPassword" type="password" placeholder="Confirm new password" required>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <button class="btn" type="submit">Change Password</button>
+          </div>
+        </form>
+        <p class="admin-help" style="margin-top:10px;">After changing, use the new password on next login.</p>
+        <div style="margin-top:14px;">
+          <button class="btn btn-sm btn-outline" id="logoutAdminAccount" type="button">Logout</button>
+        </div>
+      </div>
+
+      <div class="admin-card" data-admin-only>
+        <h3>Meta Conversions API</h3>
+        <p class="sub">Server-side Lead tracking. More reliable than the browser pixel — it isn't blocked by ad blockers, iOS, or browser tracking prevention.</p>
+        <div id="capiStatus" class="admin-help" style="margin:6px 0 14px;">Checking status…</div>
+        <form id="capiForm" style="display:grid;gap:10px;max-width:560px;">
+          <input id="capiToken" type="password" autocomplete="off" placeholder="Paste Conversions API access token">
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <button class="btn" type="submit">Save Token</button>
+            <button class="btn btn-sm btn-outline" id="capiRemove" type="button">Remove</button>
+            <span id="capiMsg" class="admin-help" style="align-self:center;"></span>
+          </div>
+        </form>
+        <p class="admin-help" style="margin-top:10px;">
+          Get the token in Meta <strong>Events Manager → your pixel → Settings → Conversions API → Generate access token</strong>.
+          For security the token is stored write-only — it is never shown again after saving. Pixel ID <strong>1078447861507419</strong>.
+        </p>
+      </div>
+
+      <div class="admin-card" data-admin-only>
         <h3>Listing Studio Import</h3>
         <p class="sub">Import JSON generated by Maple Leaf Listing Studio or the Edge extension.</p>
         <input id="importData" type="file" accept=".json">
         <p class="admin-help" style="margin-top:10px;">Supports single vehicle JSON, inventory array, or full site export.</p>
       </div>
     </section>
+
+
+    <!-- ===== HOW IT WORKS TAB ===== -->
+    <section id="howitworks" class="admin-section">
+      <div class="section-toolbar">
+        <div>
+          <h2>How It Works</h2>
+          <p>A plain-language guide to the Maple Leaf Motors command center. Everything here updates live across all devices.</p>
+        </div>
+      </div>
+
+      <div class="admin-card">
+        <h3>The big picture</h3>
+        <p class="admin-help">
+          Your website and this dashboard are connected through a small program running on Cloudflare (a “Worker”) plus a secure database (“KV”).
+          When someone fills out the finance form on the website, it’s saved instantly and shows up here as a lead. Any change you make here —
+          status, notes, inventory, client photos — is saved to the same place, so every admin sees the same up-to-date information.
+          You don’t need to install anything; just log in at <strong>/admin</strong> from any browser.
+        </p>
+      </div>
+
+      <div class="admin-card">
+        <h3>1. Finance Leads</h3>
+        <p class="sub">Your main workspace — every customer who submits the website finance form lands here.</p>
+        <ul class="admin-help" style="line-height:1.7;">
+          <li><strong>New leads</strong> are highlighted and counted at the top. A lead older than 24–48 hours with no progress gets an age badge so nothing slips.</li>
+          <li><strong>Status</strong> tracks where each customer is. Move them along as you work: <em>New Lead → Contacted → Application Sent → Dealertrack Submitted → Approved → Needs Cosigner → Vehicle Selected → Delivered</em> (or <em>Lost</em>).</li>
+          <li><strong>Notes</strong> let you record anything about the customer. Click <strong>Save</strong> on a row to store status and notes.</li>
+          <li><strong>Search & filters</strong> at the top help you find leads by name, status, or who they’re assigned to.</li>
+          <li><strong>Assign</strong> (admins only) hands a lead to a specific salesperson — they’ll then see it in their own login.</li>
+        </ul>
+      </div>
+
+      <div class="admin-card">
+        <h3>2. Pipeline</h3>
+        <p class="admin-help">
+          The same leads shown as a visual board. The <strong>conversion strip</strong> shows how many leads reach each stage, and the
+          <strong>kanban board</strong> groups every lead into columns by status — a quick way to see the health of your whole pipeline at a glance.
+        </p>
+      </div>
+
+      <div class="admin-card" data-admin-only>
+        <h3>3. Marketing &amp; Meta Pixel <span class="status-chip ok" style="vertical-align:middle;">Admin only</span></h3>
+        <p class="sub">How your Facebook / Instagram advertising connects to real leads.</p>
+        <ul class="admin-help" style="line-height:1.7;">
+          <li>A <strong>Meta Pixel</strong> (ID 1078447861507419) is installed on every public page. It records a <strong>PageView</strong> when someone visits and a <strong>Lead</strong> when they submit the finance form.</li>
+          <li>This tab turns the tracking your leads already carry (which ad, campaign, or source they came from) into simple charts: <strong>leads by source</strong>, <strong>top campaigns</strong>, and <strong>recent paid-social leads</strong>.</li>
+          <li>The numbers here come from your own leads. The full ad metrics — spend, reach, cost per lead — live in Meta, so the <strong>Events Manager</strong> and <strong>Ads Manager</strong> buttons link you straight there.</li>
+        </ul>
+      </div>
+
+      <div class="admin-card" data-admin-only>
+        <h3>4. Meta Conversions API <span class="status-chip ok" style="vertical-align:middle;">Admin only</span></h3>
+        <p class="sub">Server-side tracking — set this up once in the Account tab.</p>
+        <ul class="admin-help" style="line-height:1.7;">
+          <li>The browser pixel can be blocked by ad blockers, iPhones, and browser privacy settings. The <strong>Conversions API</strong> fixes that by sending the Lead event from the server, where nothing can block it — so Meta sees more of your real conversions.</li>
+          <li>To turn it on: <strong>Account tab → Meta Conversions API → paste your access token → Save</strong>. The status shows <em>Connected</em> once it’s working.</li>
+          <li>The browser pixel and the server both report the same lead, but they share a hidden ID so Meta counts it <strong>once, not twice</strong>.</li>
+          <li>For security the token is <strong>write-only</strong>: after you save it, it’s never shown again and can’t be read back out of the dashboard. Replace it anytime to rotate it, or Remove it to switch server tracking off.</li>
+        </ul>
+      </div>
+
+      <div class="admin-card" data-admin-only>
+        <h3>5. Live Inventory <span class="status-chip ok" style="vertical-align:middle;">Admin only</span></h3>
+        <p class="admin-help">
+          Add, edit, and remove the vehicles shown on the website. Changes publish to the live site right away. You can also import vehicles
+          from Listing Studio JSON in the Account tab.
+        </p>
+      </div>
+
+      <div class="admin-card" data-admin-only>
+        <h3>6. Our Clients <span class="status-chip ok" style="vertical-align:middle;">Admin only</span></h3>
+        <p class="admin-help">
+          Manage the delivery photos and customer testimonials that appear on the website’s “Our Clients” showcase. Upload a photo or
+          testimonial here and it appears on the public site.
+        </p>
+      </div>
+
+      <div class="admin-card" data-admin-only>
+        <h3>7. Accounts &amp; roles <span class="status-chip ok" style="vertical-align:middle;">Admin only</span></h3>
+        <ul class="admin-help" style="line-height:1.7;">
+          <li><strong>Admin</strong> (you) sees everything: all leads, marketing, inventory, clients, and account management.</li>
+          <li><strong>Sales</strong> users have a simpler view — they only see the leads assigned to them, plus the pipeline and their own account settings. Admin-only tabs are hidden from them.</li>
+          <li>Create a new login in the <strong>Accounts</strong> tab: enter a name, username, role, and a temporary password (12+ characters). They can change their own password later.</li>
+        </ul>
+      </div>
+
+      <div class="admin-card">
+        <h3>8. Your Account</h3>
+        <ul class="admin-help" style="line-height:1.7;">
+          <li><strong>Change your password</strong> anytime — it’s saved securely and works on every device next time you log in.</li>
+          <li>Passwords are stored <strong>hashed</strong> (scrambled one-way), so no one — not even an admin — can read them. If one is forgotten, it’s <strong>reset</strong>, not recovered.</li>
+          <li>The <strong>Meta Conversions API</strong> token and <strong>Listing Studio import</strong> also live here.</li>
+        </ul>
+      </div>
+
+      <div class="admin-card">
+        <h3>Good to know</h3>
+        <ul class="admin-help" style="line-height:1.7;">
+          <li><strong>It’s all live.</strong> There’s no “publish” button for leads or status — changes save as you make them and sync to every admin.</li>
+          <li><strong>After an update, refresh.</strong> If something looks off right after we’ve made a change, do a hard refresh (Ctrl+F5) to load the newest version.</li>
+          <li><strong>Privacy.</strong> The form only collects what’s needed to match a vehicle; the pixel/CAPI track conversions, not sensitive financial details.</li>
+          <li><strong>Stuck?</strong> Note what you clicked and what happened, and reach out — most issues are quick to fix.</li>
+        </ul>
+      </div>
+    </section>
   </main>
 </div>
 
-<script src="../assets/js/admin.js?v=10.24"></script>
+<script src="../assets/js/admin.js?v=14"></script>
 
 <script>
 /* v10.20 Direct Live Inventory Save Binder + Force Calculator Price Autofill */
@@ -1452,10 +1593,20 @@ function renderLeadCards() {
         ${l.vehicleType ? `<span class="lead-detail-pill">${escHtml(l.vehicleType)}</span>` : ''}
         ${l.creditSituation ? `<span class="lead-detail-pill">${escHtml(l.creditSituation)}</span>` : ''}
         ${l.budget ? `<span class="lead-detail-pill">${escHtml(l.budget)}</span>` : ''}
+        ${l.assignedToName ? `<span class="lead-detail-pill">Assigned: ${escHtml(l.assignedToName)}</span>` : `<span class="lead-detail-pill">Unassigned</span>`}
+      </div>
+      <div class="lead-flow-card-meta">
+        <strong>Source Type:</strong> ${escHtml(l.sourceType || l.source || 'website')}<br>
+        ${l.campaign ? `<strong>Campaign:</strong> ${escHtml(l.campaign)}<br>` : ''}
+        ${l.adset ? `<strong>Adset:</strong> ${escHtml(l.adset)}<br>` : ''}
+        ${l.ad ? `<strong>Ad:</strong> ${escHtml(l.ad)}<br>` : ''}
+        ${l.placement ? `<strong>Placement:</strong> ${escHtml(l.placement)}<br>` : ''}
+        ${l.fbclid ? `<strong>fbclid:</strong> ${escHtml(l.fbclid)}<br>` : ''}
+        ${l.referrer ? `<strong>Referrer:</strong> ${escHtml(l.referrer)}` : ''}
       </div>
       <div class="lead-flow-card-footer">
         <small style="font-family:var(--font-ui);font-size:11px;color:var(--muted);">${escHtml((l.createdAt||'').replace('T',' ').slice(0,16))}</small>
-        <div style="display:flex;gap:6px;align-items:center;">${leadAgeBadge(l.createdAt)}<span class="badge-source">${escHtml(l.source||'website')}</span></div>
+        <div style="display:flex;gap:6px;align-items:center;">${leadAgeBadge(l.createdAt)}<span class="badge-source">${escHtml(l.sourceType||l.source||'website')}</span></div>
       </div>
     </div>`;
   }).join('');
@@ -1473,6 +1624,7 @@ function afterLeadsRender() {
   renderFunnelBars(FINANCE_LEADS);
   renderConversionStrip(FINANCE_LEADS);
   renderKanbanBoard(FINANCE_LEADS);
+  renderMarketingPanel(FINANCE_LEADS);
 
   // Sync top stat cards (totalLeads already set by admin.js)
   const approved = FINANCE_LEADS.filter(l => l.status === 'APPROVED').length;
@@ -1522,6 +1674,101 @@ function afterLeadsRender() {
   });
 }
 
+// ── Marketing / Meta Pixel panel (built from lead attribution we already capture) ──
+function mEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function mTimeAgo(iso){
+  if(!iso) return '';
+  const diff = Date.now() - new Date(iso).getTime();
+  if (isNaN(diff)) return '';
+  const m = Math.floor(diff/60000), h = Math.floor(m/60), d = Math.floor(h/24);
+  if (d > 0) return d+'d ago';
+  if (h > 0) return h+'h ago';
+  if (m > 0) return m+'m ago';
+  return 'just now';
+}
+function mIsPaidFb(l){
+  if (l.sourceType === 'paid_facebook') return true;
+  if (l.fbclid) return true;
+  const s = String(l.utm_source || l.source || '').toLowerCase();
+  return ['facebook','fb','meta','instagram','ig'].includes(s);
+}
+function mSourceLabel(l){
+  if (mIsPaidFb(l)) return 'Facebook / Instagram';
+  const s = String(l.utm_source || l.source || '').toLowerCase();
+  if (l.sourceType === 'organic_search' || /google|bing|yahoo|duckduckgo/.test(s)) return 'Organic search';
+  if (s && s !== 'website') return s.charAt(0).toUpperCase() + s.slice(1);
+  return 'Direct / website';
+}
+function mIsApproved(l){ return l.status === 'APPROVED' || l.status === 'DELIVERED'; }
+function renderMarketingPanel(leads){
+  if (!document.getElementById('marketingStats')) return;
+  const list = Array.isArray(leads) ? leads : [];
+  const total = list.length;
+  const paid = list.filter(mIsPaidFb);
+  const paidApproved = paid.filter(mIsApproved).length;
+  const share = total ? Math.round((paid.length / total) * 100) : 0;
+
+  // Stat cards
+  document.getElementById('marketingStats').innerHTML = [
+    ['Total leads', total],
+    ['Facebook / IG leads', paid.length],
+    ['FB/IG approved', paidApproved],
+    ['Paid share', share + '%']
+  ].map(([label,val]) => `<div class="lead-stat-card"><strong>${mEsc(val)}</strong><span>${mEsc(label)}</span></div>`).join('');
+
+  // Source breakdown bars
+  const bySource = {};
+  list.forEach(l => { const k = mSourceLabel(l); bySource[k] = (bySource[k]||0) + 1; });
+  const srcEntries = Object.entries(bySource).sort((a,b)=>b[1]-a[1]);
+  const maxSrc = srcEntries.length ? srcEntries[0][1] : 0;
+  const barColors = ['#3b82f6','#22c55e','#f59e0b','#8b5cf6','#06b6d4','#ec4899','#94a3b8'];
+  const srcEl = document.getElementById('marketingSourceBars');
+  if (srcEl) srcEl.innerHTML = srcEntries.length ? srcEntries.map(([label,count],i)=>`
+    <div class="funnel-bar-row">
+      <div class="funnel-bar-label">${mEsc(label)}</div>
+      <div class="funnel-bar-track"><div class="funnel-bar-fill" style="width:${maxSrc?Math.round(count/maxSrc*100):0}%;background:${barColors[i%barColors.length]};"></div></div>
+      <div class="funnel-bar-count">${count}</div>
+    </div>`).join('') : '<p class="admin-help">No leads yet.</p>';
+
+  // Top campaigns
+  const byCampaign = {};
+  list.forEach(l => {
+    const c = String(l.utm_campaign || l.campaign || '').trim();
+    if (!c) return;
+    if (!byCampaign[c]) byCampaign[c] = { leads: 0, approved: 0 };
+    byCampaign[c].leads++;
+    if (mIsApproved(l)) byCampaign[c].approved++;
+  });
+  const campEntries = Object.entries(byCampaign).sort((a,b)=>b[1].leads-a[1].leads).slice(0,10);
+  const campEl = document.getElementById('marketingCampaignRows');
+  if (campEl) campEl.innerHTML = campEntries.length ? campEntries.map(([name,v])=>`
+    <tr><td><strong>${mEsc(name)}</strong></td><td>${v.leads}</td><td>${v.approved}</td></tr>`).join('')
+    : '<tr><td colspan="3" class="admin-help">No campaign-tagged leads yet. Use the campaign link from the Account tab in your Meta ads.</td></tr>';
+
+  // Recent paid-social leads
+  const recentPaid = paid.slice().sort((a,b)=> new Date(b.createdAt||0) - new Date(a.createdAt||0)).slice(0,8);
+  const paidEl = document.getElementById('marketingPaidRows');
+  if (paidEl) paidEl.innerHTML = recentPaid.length ? recentPaid.map(l=>{
+    const name = `${l.firstName||''} ${l.lastName||''}`.trim() || 'Lead';
+    const camp = [l.utm_campaign||l.campaign, l.ad].filter(Boolean).join(' · ') || '—';
+    const statusCls = 'status-' + String(l.status||'NEW LEAD').replace(/\s+/g,'-');
+    return `<tr><td><strong>${mEsc(name)}</strong></td><td>${mEsc(mTimeAgo(l.createdAt))}</td><td>${mEsc(camp)}</td><td><span class="status-badge ${mEsc(statusCls)}">${mEsc(l.status||'NEW LEAD')}</span></td></tr>`;
+  }).join('') : '<tr><td colspan="4" class="admin-help">No Facebook / Instagram leads captured yet.</td></tr>';
+}
+
+// Re-render the marketing panel when its tab is opened. If leads haven't been
+// fetched yet (admin lands straight on Marketing), load them — loadFinanceLeads
+// calls the wrapped renderFinanceLeads, which runs renderMarketingPanel.
+document.querySelectorAll('.tab[data-tab="marketing"], .sidebar-link[data-goto="marketing"]').forEach(el => {
+  el.addEventListener('click', () => {
+    if (typeof FINANCE_LEADS !== 'undefined' && FINANCE_LEADS.length) {
+      renderMarketingPanel(FINANCE_LEADS);
+    } else if (typeof loadFinanceLeads === 'function') {
+      loadFinanceLeads();
+    }
+  });
+});
+
 // Wait for admin.js to define renderFinanceLeads, then wrap it
 let wrapAttempts = 0;
 const wrapPoll = setInterval(() => {
@@ -1551,7 +1798,7 @@ document.querySelectorAll('.tab').forEach(t => {
 });
 
 // Re-render bars on filter change
-['leadSearch','leadStatusFilter'].forEach(id => {
+['leadSearch','leadStatusFilter','leadAssignedFilter'].forEach(id => {
   const el = document.getElementById(id);
   if (el) el.addEventListener('input', () => {
     if (typeof renderLeadCards !== 'undefined' && leadsCardView && leadsCardView.style.display !== 'none') {

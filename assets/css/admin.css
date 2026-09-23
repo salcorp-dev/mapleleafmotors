@@ -1,0 +1,239 @@
+/* =============================================
+   MAPLE LEAF MOTORS — Admin portal theme (Sept 2026)
+   Matches the public site: warm white, charcoal, Maple Leaf red.
+   Loads after the dashboard's inline <style>, so it wins on equal specificity.
+   ============================================= */
+
+:root {
+  --a-bg: #f6f3ee;
+  --a-panel: #ffffff;
+  --a-line: #ebe5dd;
+  --a-line-2: #ddd5ca;
+  --a-ink: #16181d;
+  --a-text: #3b3f47;
+  --a-muted: #6b7079;
+  --a-red: #d2102e;
+  --a-red-soft: #fdecee;
+  --a-shadow: 0 1px 2px rgba(22,24,29,.04), 0 8px 24px -10px rgba(22,24,29,.12);
+  --a-radius: 18px;
+}
+
+body { background: var(--a-bg) !important; color: var(--a-text); }
+
+.admin-shell {
+  --ink: var(--a-ink); --ink-2: #2a2d34; --text: var(--a-text); --muted: var(--a-muted);
+  --line: var(--a-line); --line-2: var(--a-line-2); --bg: #faf8f5; --bg-2: #f3efe9; --brand: var(--a-red);
+  grid-template-columns: 256px 1fr !important;
+  background: var(--a-bg) !important; color: var(--a-text) !important;
+}
+
+/* ── Sidebar ── */
+.sidebar {
+  background: #fff !important; color: var(--a-ink) !important;
+  border-right: 1px solid var(--a-line) !important;
+  padding: 22px 16px !important;
+}
+.sidebar-brand { gap: 12px !important; margin-bottom: 6px !important; }
+.sidebar-brand img { width: 42px !important; height: 42px !important; border-radius: 12px !important; box-shadow: 0 4px 12px rgba(22,24,29,.18); }
+.sidebar-brand strong { color: var(--a-ink) !important; font-family: var(--font-display) !important; font-size: 20px !important; letter-spacing: .04em !important; }
+.sidebar-sub { color: var(--a-muted) !important; border-color: var(--a-line) !important; }
+.sidebar-section { color: #a39d95 !important; letter-spacing: .14em !important; }
+.sidebar-link {
+  color: #4a4f58 !important; font-weight: 600 !important; border-radius: 12px !important;
+  position: relative; transition: background .15s ease, color .15s ease !important;
+}
+.sidebar-link svg { opacity: .65 !important; }
+.sidebar-link:hover { background: #f6f3ee !important; color: var(--a-ink) !important; }
+.sidebar-link.active { background: var(--a-red-soft) !important; color: var(--a-red) !important; }
+.sidebar-link.active svg { opacity: 1 !important; stroke: var(--a-red); }
+.sidebar-link.active::before {
+  content: ""; position: absolute; left: -16px; top: 8px; bottom: 8px; width: 3px;
+  border-radius: 0 3px 3px 0; background: var(--a-red);
+}
+.sidebar-bottom { border-color: var(--a-line) !important; }
+.sidebar-bottom a, .sidebar-bottom button {
+  background: #faf8f5 !important; color: #4a4f58 !important; border: 1px solid var(--a-line) !important;
+}
+.sidebar-bottom a:hover, .sidebar-bottom button:hover { background: #fff !important; color: var(--a-ink) !important; border-color: var(--a-line-2) !important; }
+#logoutAdmin:hover { color: var(--a-red) !important; border-color: rgba(210,16,46,.3) !important; }
+#adminUserBadge { color: var(--a-muted) !important; }
+
+/* ── Main header ── */
+.main { padding: 32px 36px 72px !important; }
+.main-header h1 { font-family: var(--font-display) !important; font-size: 44px !important; line-height: .95 !important; letter-spacing: .01em !important; color: var(--a-ink) !important; }
+.main-header p { color: var(--a-muted) !important; font-size: 14px !important; }
+
+/* ── Surfaces ── */
+.admin-shell .stat-card, .admin-shell .pipeline-visual, .admin-shell .lead-flow-card,
+.admin-shell .conversion-strip, .admin-shell .table, .admin-shell .lead-stat-card,
+.admin-shell .admin-card, .admin-shell .lead-mini, .admin-shell .payment-calc-panel {
+  background: var(--a-panel) !important; border: 1px solid var(--a-line) !important;
+  border-radius: var(--a-radius) !important; box-shadow: var(--a-shadow) !important; color: var(--a-text) !important;
+}
+.admin-shell .lead-flow-card:hover { box-shadow: 0 2px 4px rgba(22,24,29,.05), 0 20px 40px -14px rgba(22,24,29,.2) !important; border-color: rgba(210,16,46,.25) !important; }
+.admin-shell h2, .admin-shell h3, .admin-shell h4 { color: var(--a-ink) !important; }
+.section-toolbar h2 { font-family: var(--font-display) !important; font-size: 28px !important; letter-spacing: .02em !important; }
+.section-toolbar p, .admin-help, .admin-shell .sub, .admin-shell .muted { color: var(--a-muted) !important; }
+
+/* Stat cards */
+.stat-grid { gap: 16px !important; }
+.stat-card { padding: 20px 22px !important; }
+.stat-card-accent { height: 4px !important; background: linear-gradient(90deg, var(--a-red), #ff5a3c) !important; }
+.stat-number, .lead-stat-card strong { font-family: var(--font-display) !important; font-size: 44px !important; font-weight: 400 !important; color: var(--a-ink) !important; letter-spacing: .01em; }
+.stat-label, .lead-stat-card span { color: var(--a-muted) !important; }
+.stat-delta.up { color: #1a7f45 !important; }
+
+/* ── Tabs & toggles ── */
+.admin-shell .tabs { background: #fff !important; border: 1px solid var(--a-line) !important; border-radius: 999px !important; padding: 5px !important; box-shadow: var(--a-shadow); }
+.admin-shell .tab { border-radius: 999px !important; color: #4a4f58 !important; font-weight: 600 !important; }
+.admin-shell .tab.active { background: var(--a-red) !important; color: #fff !important; box-shadow: 0 6px 14px -4px rgba(210,16,46,.5) !important; }
+.admin-shell .tab:hover:not(.active) { background: #f6f3ee !important; color: var(--a-ink) !important; }
+.admin-shell .view-btn { background: #fff !important; border: 1px solid var(--a-line) !important; color: #4a4f58 !important; }
+.admin-shell .view-btn.active { background: var(--a-ink) !important; color: #fff !important; border-color: var(--a-ink) !important; }
+
+/* ── Buttons ── */
+.admin-shell .btn { border-radius: 999px !important; }
+.admin-shell .btn.btn-outline, .admin-shell .btn.light, .admin-shell .btn.small.light {
+  background: #fff !important; color: var(--a-ink) !important; border: 1.5px solid var(--a-line-2) !important; box-shadow: none !important;
+}
+.admin-shell .btn.btn-outline:hover, .admin-shell .btn.light:hover { border-color: var(--a-ink) !important; }
+
+/* ── Tables ── */
+.admin-shell .table-wrap { border-radius: var(--a-radius); }
+.admin-shell .table { overflow: hidden; }
+.admin-shell .table th {
+  background: #faf8f5 !important; color: var(--a-muted) !important; border-color: var(--a-line) !important;
+  font-size: 11px !important; letter-spacing: .1em !important; text-transform: uppercase;
+}
+.admin-shell .table td { border-color: #f1ece5 !important; color: var(--a-text) !important; }
+.admin-shell .table tr:hover td { background: #fdfbf8 !important; }
+.admin-shell .lead-row-new { background: #fff8ef !important; }
+.admin-shell .muted-row { background: #faf8f5 !important; opacity: .7; }
+
+/* ── Forms ── */
+.admin-shell input, .admin-shell select, .admin-shell textarea,
+.admin-shell .lead-filters input, .admin-shell .lead-filters select,
+.admin-shell .admin-card input, .admin-shell .admin-card textarea, .admin-shell .admin-card select,
+.admin-shell .payment-field input, .admin-shell .payment-field select,
+.admin-modal input, .admin-modal textarea, .admin-modal select {
+  background: #fff !important; border: 1.5px solid var(--a-line-2) !important; color: var(--a-ink) !important; border-radius: 12px !important;
+}
+.admin-shell input:focus, .admin-shell select:focus, .admin-shell textarea:focus,
+.admin-modal input:focus, .admin-modal textarea:focus, .admin-modal select:focus {
+  border-color: var(--a-red) !important; box-shadow: 0 0 0 4px rgba(210,16,46,.12) !important; outline: none;
+}
+.admin-shell input::placeholder, .admin-shell textarea::placeholder, .admin-modal input::placeholder { color: #a39d95 !important; }
+.admin-shell label { color: #2a2d34 !important; }
+
+/* ── Pipeline / funnel ── */
+.pipeline-visual-title { color: var(--a-muted) !important; }
+.admin-shell .funnel-bar-track { background: #f3efe9 !important; height: 12px !important; }
+.funnel-bar-label, .funnel-bar-count { color: var(--a-ink) !important; }
+.bar-new       { background: var(--a-red) !important; }
+.bar-contacted { background: #0ea5a4 !important; }
+.bar-appsent   { background: #e3a008 !important; }
+.bar-dealer    { background: #f97316 !important; }
+.bar-approved  { background: #22a45d !important; }
+.bar-cosigner  { background: #e8577a !important; }
+.bar-vehicle   { background: #0891b2 !important; }
+.bar-delivered { background: #15803d !important; }
+.bar-lost      { background: #b8b2a9 !important; }
+.admin-shell .kanban-lane { background: #f3efe9 !important; border: 1px solid var(--a-line) !important; border-radius: var(--a-radius) !important; }
+.lane-header { color: var(--a-ink) !important; }
+.lane-count { background: #fff !important; color: var(--a-ink) !important; }
+.conv-stage { border-color: var(--a-line) !important; }
+.conv-stage-num { color: var(--a-ink) !important; font-family: var(--font-display) !important; }
+
+/* ── Status chips: no purple, one colour per stage ── */
+.status-badge, .status-chip { border-radius: 999px !important; font-weight: 700 !important; }
+.status-NEW-LEAD              { background: var(--a-red-soft) !important; color: var(--a-red) !important; }
+.status-CONTACTED             { background: #e6f7f6 !important; color: #0f766e !important; }
+.status-APPLICATION-SENT      { background: #fdf3e1 !important; color: #a16207 !important; }
+.status-DEALERTRACK-SUBMITTED { background: #fff1e6 !important; color: #c2410c !important; }
+.status-APPROVED              { background: #e8f7ee !important; color: #1a7f45 !important; }
+.status-NEEDS-COSIGNER        { background: #fdeef2 !important; color: #be185d !important; }
+.status-VEHICLE-SELECTED      { background: #e6f6fa !important; color: #0e7490 !important; }
+.status-DELIVERED             { background: #dcfce7 !important; color: #14532d !important; }
+.status-LOST                  { background: #f1ece5 !important; color: #6b7079 !important; }
+.admin-shell .status-chip { background: #f3efe9 !important; color: #4a4f58 !important; }
+.admin-shell .status-chip.ok { background: #e8f7ee !important; color: #1a7f45 !important; }
+.admin-shell .status-chip.warn { background: #fdf3e1 !important; color: #a16207 !important; }
+.admin-shell .badge-source { background: #eef4ff !important; color: #1e40af !important; }
+.admin-shell .lead-detail-pill { background: #f6f3ee !important; color: var(--a-text) !important; border: 1px solid var(--a-line); }
+.live-status-dot { background: #e8f7ee !important; color: #1a7f45 !important; }
+
+/* ── Inventory, clients, payments ── */
+.admin-shell .inventory-thumb { background: #f3efe9 !important; border: 1px solid var(--a-line) !important; border-radius: 12px !important; }
+.admin-shell .payment-result { background: #faf8f5 !important; border: 1px solid var(--a-line) !important; color: var(--a-ink) !important; }
+.admin-shell .payment-result strong { color: var(--a-ink) !important; }
+.client-preview img { border-color: var(--a-line) !important; }
+
+/* ── Modals ── */
+.modal-backdrop { background: rgba(22,24,29,.45) !important; }
+.admin-modal { background: #fff !important; border: 1px solid var(--a-line) !important; color: var(--a-text) !important; border-radius: 22px !important; box-shadow: 0 40px 90px -20px rgba(22,24,29,.35) !important; }
+.admin-modal-head { border-color: var(--a-line) !important; }
+.admin-modal-head h2, .admin-modal-head h3 { font-family: var(--font-display) !important; color: var(--a-ink) !important; }
+.admin-modal-actions { background: #faf8f5 !important; border-color: var(--a-line) !important; }
+
+/* ── Small screens ── */
+@media (max-width: 900px) {
+  .admin-shell { grid-template-columns: 1fr !important; }
+  .sidebar { position: relative !important; height: auto !important; border-right: 0 !important; border-bottom: 1px solid var(--a-line) !important; }
+  .sidebar-link.active::before { display: none; }
+  .main { padding: 22px 16px 60px !important; }
+  .stat-grid { grid-template-columns: repeat(2, 1fr) !important; }
+}
+
+/* =============================================
+   Login page
+   ============================================= */
+.admin-login {
+  min-height: 100vh; display: grid; grid-template-columns: 1.1fr 1fr; background: var(--a-bg);
+}
+.login-visual {
+  position: relative; overflow: hidden; color: #fff; padding: 48px;
+  display: flex; flex-direction: column; justify-content: space-between;
+  background: #16181d url("../video/highway-poster.jpg") center / cover no-repeat;
+}
+.login-visual video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.login-visual::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(160deg, rgba(210,16,46,.88) 0%, rgba(166,12,36,.78) 45%, rgba(22,24,29,.55) 100%);
+}
+.login-visual > * { position: relative; z-index: 1; }
+.login-brand { display: flex; align-items: center; gap: 12px; font-family: var(--font-display); font-size: 22px; letter-spacing: .04em; }
+.login-brand img { width: 46px; height: 46px; border-radius: 12px; box-shadow: 0 8px 20px rgba(0,0,0,.3); }
+.login-visual h1 { color: #fff !important; font-size: clamp(48px, 6vw, 84px) !important; line-height: .9 !important; margin: 0 0 16px; }
+.login-visual p { color: rgba(255,255,255,.86) !important; max-width: 38ch; font-size: 16px; line-height: 1.6; }
+.login-visual small { color: rgba(255,255,255,.7); font-family: var(--font-ui); font-size: 12px; }
+.login-panel { display: grid; place-items: center; padding: 40px 24px; }
+.admin-login .login-card {
+  width: min(400px, 100%); background: #fff !important; border: 1px solid var(--a-line) !important;
+  border-radius: 24px !important; padding: 36px !important; box-shadow: 0 30px 70px -24px rgba(22,24,29,.25) !important;
+}
+.login-card h2 { font-family: var(--font-display); font-size: 40px !important; color: var(--a-ink) !important; margin: 0 0 6px; line-height: .95; }
+.login-card .muted { color: var(--a-muted) !important; font-family: var(--font-ui); font-size: 14px; margin: 0 0 26px; }
+.login-card label { color: #2a2d34 !important; font-weight: 600; }
+.login-card input { background: #fff !important; border: 1.5px solid var(--a-line-2) !important; color: var(--a-ink) !important; border-radius: 12px !important; }
+.login-card input:focus { border-color: var(--a-red) !important; box-shadow: 0 0 0 4px rgba(210,16,46,.12) !important; outline: none; }
+.login-card .btn { width: 100%; margin-top: 10px; }
+.login-card #msg { color: var(--a-red) !important; min-height: 1.2em; }
+.login-foot { margin-top: 22px; text-align: center; font: 500 12px/1.5 var(--font-ui); color: var(--a-muted); }
+.login-foot a { color: var(--a-muted); }
+.login-foot a:hover { color: var(--a-red); }
+@media (max-width: 860px) {
+  .admin-login { grid-template-columns: 1fr; }
+  .login-visual { min-height: 220px; padding: 28px; }
+  .login-visual h1 { font-size: 44px !important; }
+  .login-visual p, .login-visual small { display: none; }
+}
+
+/* Login layout fixes: full-bleed split, overlay above the footage */
+.admin-login { place-items: stretch !important; padding: 0 !important; }
+.login-visual > video { z-index: 0 !important; }
+.login-visual::after { z-index: 0; }
+.login-visual > :not(video) { z-index: 1; }
+@media (max-width: 900px) {
+  .admin-shell .tabs { border-radius: 18px !important; width: 100% !important; }
+}
+.admin-shell code, .admin-shell .admin-card { overflow-wrap: anywhere; }

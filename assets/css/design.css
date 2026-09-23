@@ -1,0 +1,397 @@
+/* =============================================
+   MAPLE LEAF MOTORS — Light Design System v2 (Sept 2026)
+   Warm white canvas, charcoal type, Maple Leaf red.
+   Sits on top of styles.css; remaster.css adds motion.
+   ============================================= */
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --bg:          #faf8f5;
+  --bg-2:        #f3efe9;
+  --surface:     #ffffff;
+  --gold:        #d2102e;   /* legacy name, now the brand red */
+  --gold2:       #d2102e;
+  --red:         #d2102e;
+  --red-deep:    #a60c24;
+  --red-soft:    #fdecee;
+  --red-glow:    rgba(210,16,46,0.22);
+  --text:        #3b3f47;
+  --muted:       #6b7079;
+  --line:        #ebe5dd;
+  --panel:       #ffffff;
+  --radius:      18px;
+
+  --brand:       #d2102e;
+  --brand-2:     #a60c24;
+  --brand-glow:  rgba(210,16,46,0.18);
+  --brand-subtle:rgba(210,16,46,0.07);
+  --ink:         #16181d;
+  --ink-2:       #2a2d34;
+  --line-2:      #ddd5ca;
+
+  --font-display: 'Bebas Neue', 'Impact', sans-serif;
+  --font-body:    'Inter', system-ui, sans-serif;
+  --font-ui:      'Inter', system-ui, sans-serif;
+
+  --shadow-xs: 0 1px 2px rgba(22,24,29,.05);
+  --shadow-sm: 0 1px 2px rgba(22,24,29,.04), 0 4px 12px rgba(22,24,29,.05);
+  --shadow-md: 0 1px 2px rgba(22,24,29,.04), 0 10px 30px rgba(22,24,29,.08);
+  --shadow-lg: 0 2px 4px rgba(22,24,29,.04), 0 24px 60px rgba(22,24,29,.12);
+  --shadow-xl: 0 4px 8px rgba(22,24,29,.05), 0 40px 90px rgba(22,24,29,.16);
+
+  /* The card recipe every box on the site shares */
+  --card-bg: #ffffff;
+  --card-border: 1px solid #ece6de;
+  --card-radius: 22px;
+  --card-shadow: 0 1px 2px rgba(22,24,29,.04), 0 12px 32px -8px rgba(22,24,29,.10);
+  --card-shadow-hover: 0 2px 4px rgba(22,24,29,.05), 0 30px 60px -12px rgba(22,24,29,.18), 0 0 0 1px rgba(210,16,46,.18);
+}
+
+html { background: var(--bg); }
+body { background: transparent; color: var(--text); font-family: var(--font-body); }
+body > *:not(#mlm-bg-scene) { position: relative; z-index: 1; }
+
+/* ── Typography ── */
+h1, h2, h3, h4 { color: var(--ink); font-family: var(--font-display); letter-spacing: 0.015em; font-weight: 400; }
+h1 { font-size: clamp(52px, 9.5vw, 108px); line-height: 0.9; }
+h2 { font-size: clamp(38px, 5vw, 66px); line-height: 0.93; }
+h3 { font-size: clamp(22px, 2.6vw, 30px); line-height: 1.08; }
+p, li { color: var(--text); }
+.lead { color: #4a4f58; font-family: var(--font-body); }
+.section-sub { color: var(--muted); }
+.legal-note { color: #8b8f97; font-size: 12px; font-family: var(--font-ui); line-height: 1.55; margin-top: 14px; }
+.eyebrow { color: var(--red); font-weight: 800; }
+.eyebrow::before { background: var(--red); }
+
+/* ── Buttons ── */
+.btn {
+  background: var(--red); color: #fff; border: none;
+  font-family: var(--font-body); font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase;
+  border-radius: 999px; padding-inline: 26px;
+  box-shadow: 0 1px 0 rgba(255,255,255,.25) inset, 0 10px 24px -6px rgba(210,16,46,.55);
+  transition: transform .25s cubic-bezier(.2,.8,.2,1), box-shadow .25s ease, background .25s ease;
+}
+.btn:hover { background: #e3142f; transform: translateY(-2px); box-shadow: 0 1px 0 rgba(255,255,255,.25) inset, 0 16px 34px -8px rgba(210,16,46,.6); }
+.btn:active { transform: translateY(0); }
+.btn.btn-outline, .btn.btn-outline-white {
+  background: #fff; color: var(--ink); border: 1.5px solid var(--line-2); box-shadow: var(--shadow-sm);
+}
+.btn.btn-outline:hover, .btn.btn-outline-white:hover { border-color: var(--ink); color: var(--ink); background: #fff; box-shadow: var(--shadow-md); }
+.btn.btn-ghost { background: transparent; color: var(--red); padding: 0; min-height: auto; text-transform: none; letter-spacing: 0; box-shadow: none; }
+.btn.btn-ghost:hover { color: var(--red-deep); transform: none; box-shadow: none; }
+
+/* ── Nav ── */
+.nav {
+  background: rgba(250,248,245,0.82);
+  border-bottom: 1px solid rgba(22,24,29,.06);
+  backdrop-filter: saturate(1.4) blur(18px); -webkit-backdrop-filter: saturate(1.4) blur(18px);
+}
+.nav-links a:not(.btn) { color: #4a4f58; font-weight: 600; }
+.nav-links a:not(.btn):hover { background: rgba(22,24,29,.05); color: var(--ink); }
+.nav-links a.active { color: var(--red); }
+.nav-links .nav-cta { background: var(--red); color: #fff !important; border-radius: 999px; box-shadow: 0 8px 20px -6px rgba(210,16,46,.55); }
+.nav-links .nav-cta:hover { background: #e3142f !important; }
+.brand-name { color: var(--ink); }
+.brand-sub { color: var(--muted); }
+.menu-btn { background: #fff; border: 1px solid var(--line); color: var(--ink); }
+.menu-btn:hover { background: var(--bg-2); }
+@media (max-width: 860px) {
+  .nav-links { background: #fff; border: 1px solid var(--line); box-shadow: var(--shadow-lg); }
+}
+.brand img { width: 52px; height: 52px; border-radius: 12px; object-fit: contain; flex-shrink: 0; mix-blend-mode: normal; filter: drop-shadow(0 4px 10px rgba(22,24,29,.18)); }
+
+/* ── Hero ── */
+.hero { background: transparent; padding: 80px 0 100px; position: relative; }
+.hero-bg-stripe, .hero-bg-accent { display: none; }
+.hero-copy h1 { color: var(--ink); }
+.hero-copy h1 em { font-style: normal; color: var(--red); }
+.hero-copy .lead { color: #454a53; max-width: 52ch; }
+.hero-trust {
+  color: #4a4f58; font-weight: 600;
+  background: rgba(255,255,255,.85); border: 1px solid var(--line);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  border-radius: 999px; padding: 10px 18px; width: fit-content; gap: 14px; box-shadow: var(--shadow-sm);
+}
+.hero-trust-dot { background: #cfc7bc; }
+
+/* ── Unified card surface ── */
+.card, .feature-card, .review-card, .vehicle-card, .vehicle-info-card,
+.funnel-hero-card, .funnel-form-card, .stat-card, .lead-stat-card,
+.home-process-card, .lead-promise-card, .hero-approval-card, .financing-situation-card,
+.disclosure-card, .policy-card, .home-nav-card, .delivery-showcase-section, .contact-info-card {
+  background: var(--card-bg) !important;
+  border: var(--card-border) !important;
+  border-radius: var(--card-radius) !important;
+  box-shadow: var(--card-shadow) !important;
+  color: var(--text) !important;
+  backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+}
+.card:hover, .feature-card:hover, .review-card:hover, .vehicle-card:hover, .home-process-card:hover,
+.financing-situation-card:hover, .home-nav-card:hover {
+  box-shadow: var(--card-shadow-hover) !important;
+  transform: translateY(-4px);
+}
+.card, .feature-card, .review-card, .vehicle-card, .home-process-card, .financing-situation-card, .home-nav-card {
+  transition: transform .35s cubic-bezier(.2,.8,.2,1), box-shadow .35s ease !important;
+}
+.card h3, .feature-card h3, .review-card h3 { color: var(--ink); }
+
+/* Lead promise card */
+.lead-promise-card { padding: 24px 26px; margin-top: 28px; }
+.lead-promise-label { color: var(--red); font-size: 11px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; margin-bottom: 14px; }
+.lead-promise-grid { display: grid; grid-template-columns: 1fr !important; gap: 8px; }
+.lead-promise-grid div { background: var(--bg) !important; border: 1px solid var(--line) !important; border-radius: 14px; color: var(--text); font-size: 14px; line-height: 1.5; }
+.lead-promise-grid strong { display: block; color: var(--ink) !important; font-size: 13.5px; font-weight: 700; margin-bottom: 2px; }
+.lead-promise-grid span { color: var(--muted) !important; font-size: 13px; }
+.lead-promise-link { color: var(--red) !important; font-weight: 700; font-size: 14px; display: block; margin-top: 16px; }
+
+/* Hero approval card: white with a red header band */
+.hero-approval-card { overflow: hidden; }
+.hero-approval-card .approval-card-glow { display: none; }
+.hero-approval-card .approval-card-inner { background: transparent !important; }
+.hero-approval-card::before {
+  content: ""; position: absolute; left: 0; right: 0; top: 0; height: 6px; z-index: 4;
+  background: linear-gradient(90deg, var(--red), #ff5a3c);
+}
+.approval-eyebrow { color: var(--red) !important; background: var(--red-soft) !important; border: 1px solid rgba(210,16,46,.18) !important; }
+.approval-eyebrow::before { background: var(--red) !important; box-shadow: none; animation: none; }
+.approval-card-head h2 { color: var(--ink) !important; }
+.approval-card-head p { color: var(--muted) !important; }
+.approval-card-divider { background: var(--line) !important; }
+.approval-trust-item { background: var(--bg) !important; border: 1px solid var(--line) !important; }
+.approval-trust-item strong { color: var(--ink) !important; }
+.approval-trust-item small { color: var(--muted) !important; }
+.approval-trust-item > span { background: var(--red) !important; border-color: var(--red) !important; box-shadow: 0 6px 14px -4px rgba(210,16,46,.5) !important; }
+.approval-steps > div { background: var(--bg) !important; border: 1px solid var(--line) !important; color: var(--text) !important; }
+.approval-steps span { color: var(--text) !important; }
+.approval-steps b { background: #fff !important; border: 1.5px solid var(--red) !important; color: var(--red) !important; }
+.approval-card-actions { background: transparent !important; border-top: 1px solid var(--line) !important; }
+
+/* ── Sections ── */
+.section { background: transparent; }
+.section[style*="background:var(--bg-2)"], .section[style*="background: var(--bg-2)"] { background: rgba(243,239,233,.78) !important; }
+
+/* ── Feature cards ── */
+.feature-icon { background: var(--red-soft) !important; border: 1px solid rgba(210,16,46,.12) !important; border-radius: 14px; }
+.feature-icon svg { stroke: var(--red); }
+.feature-card p { color: var(--muted); }
+
+/* ── Reviews ── */
+.review-stars { color: #f5a623; }
+.review-text { color: var(--text); }
+.review-author { color: var(--ink); }
+.review-verified { color: var(--muted); }
+
+/* ── Vehicle cards ── */
+.vehicle-title { color: var(--ink); }
+.vehicle-meta { color: var(--muted); }
+.price { color: var(--ink); }
+.price-monthly strong { color: var(--red); }
+
+/* ── Category cards: real vehicle photo on top, white body below ── */
+html body .vehicle-category-grid .vehicle-category-card {
+  display: flex !important; flex-direction: column !important;
+  padding: 0 !important; min-height: 0 !important;
+  background: #fff !important; background-image: none !important;
+  border: var(--card-border) !important;
+  border-radius: var(--card-radius) !important;
+  box-shadow: var(--card-shadow) !important;
+  color: var(--ink) !important; overflow: hidden !important;
+  transition: transform .35s cubic-bezier(.2,.8,.2,1), box-shadow .35s ease !important;
+}
+html body .vehicle-category-grid .vehicle-category-card:hover { box-shadow: var(--card-shadow-hover) !important; }
+html body .vehicle-category-grid .vehicle-category-card::before,
+html body .vehicle-category-grid .vehicle-category-card::after { display: none !important; }
+html body .vehicle-category-grid .vehicle-category-card .cat-photo {
+  display: block; width: 100%; height: auto; aspect-ratio: 16 / 10; object-fit: cover;
+  background: var(--bg-2); margin: 0;
+  transition: transform .9s cubic-bezier(.2,.8,.2,1);
+}
+html body .vehicle-category-grid .vehicle-category-card:hover .cat-photo { transform: scale(1.06); }
+html body .vehicle-category-grid .vehicle-category-card > span {
+  position: absolute !important; top: 14px; left: 14px; z-index: 6 !important;
+  background: rgba(255,255,255,.94) !important; color: var(--red) !important;
+  border: none; box-shadow: 0 4px 14px rgba(22,24,29,.18) !important;
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+}
+html body .vehicle-category-grid .vehicle-category-card h3 {
+  color: var(--ink) !important; -webkit-text-fill-color: var(--ink);
+  margin: 20px 22px 8px !important; font-size: 26px !important; text-shadow: none !important;
+}
+html body .vehicle-category-grid .vehicle-category-card p { color: var(--muted) !important; margin: 0 22px 16px !important; font-size: 14.5px; flex: 1; }
+html body .vehicle-category-grid .vehicle-category-card strong { color: var(--red) !important; margin: 0 22px 22px !important; }
+html body .vehicle-category-grid .vehicle-category-card strong::after,
+html body .vehicle-category-grid .vehicle-category-card strong .rm-arrow { box-shadow: none !important; }
+.photo-credits { font: 500 11px/1.5 var(--font-ui); color: #9a9ea5; margin-top: 6px; }
+.photo-credits a { color: inherit; text-decoration: underline; text-decoration-color: rgba(0,0,0,.2); }
+@media (max-width: 980px) {
+  html body .vehicle-category-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+}
+@media (max-width: 560px) {
+  html body .vehicle-category-grid { grid-template-columns: 1fr !important; }
+}
+
+/* ── Process cards ── */
+.home-process-card { padding: 26px; }
+.home-process-card > span { color: var(--red); font-size: 40px; font-family: var(--font-display); display: block; line-height: 1; margin-bottom: 10px; }
+.home-process-card > strong { display: block; color: var(--ink); font-size: 16px; margin-bottom: 6px; }
+.home-process-card > small { display: block; color: var(--muted); font-size: 14px; line-height: 1.55; font-family: var(--font-ui); }
+
+/* ── Delivery showcase ── */
+.delivery-showcase-section { padding: clamp(22px, 3vw, 36px) !important; }
+.delivery-showcase-head h2 { color: var(--ink) !important; }
+.delivery-showcase-head p, .delivery-showcase-head .section-sub { color: var(--muted) !important; }
+.delivery-showcase-link { color: var(--red) !important; }
+.delivery-showcase-card, .delivery-quote-side { background: var(--bg) !important; color: var(--text) !important; border-color: var(--line) !important; }
+.delivery-quote-side h3, .delivery-person strong { color: var(--ink) !important; }
+.delivery-quote-side blockquote { color: #2f333a !important; }
+.delivery-person span, .delivery-actions span { color: var(--muted) !important; }
+.delivery-kicker { background: var(--red-soft) !important; color: var(--red) !important; }
+.delivery-quote-side::before, .delivery-quote-side::after { opacity: .25; }
+.delivery-photo-badge { background: rgba(255,255,255,.92) !important; color: var(--ink) !important; }
+.delivery-showcase-dots button { background: #d9d2c8 !important; }
+.delivery-showcase-dots button.active { background: var(--red) !important; width: 28px !important; }
+
+/* ── Approval band: the one bold red moment on the page ── */
+.approval-band {
+  background:
+    radial-gradient(circle at 85% 20%, rgba(255,255,255,.14), transparent 40%),
+    linear-gradient(125deg, #d2102e 0%, #b30d27 55%, #8f0a1f 100%) !important;
+  border: none !important; border-radius: 28px !important;
+  box-shadow: 0 30px 70px -20px rgba(210,16,46,.55) !important;
+}
+.approval-band h2 { color: #fff !important; }
+.approval-band .lead, .approval-band p { color: rgba(255,255,255,.86) !important; }
+.approval-band .eyebrow { color: #fff !important; }
+.approval-band .eyebrow::before { background: #fff !important; }
+.approval-band .btn, .approval-band .btn.btn-outline-white { background: #fff !important; color: var(--red) !important; border: none !important; box-shadow: 0 12px 28px -8px rgba(0,0,0,.35) !important; }
+.check { background: rgba(255,255,255,.12) !important; border: 1px solid rgba(255,255,255,.22) !important; color: #fff !important; border-radius: 12px; }
+.check::before { color: #fff !important; }
+
+/* ── Disclosure ── */
+.disclosure-card { padding: 20px 24px; font-family: var(--font-ui); font-size: 13px; color: var(--muted) !important; }
+.disclosure-card strong { color: var(--ink); }
+
+/* ── Footer (light) ── */
+.footer { background: #f1ece5 !important; border-top: 1px solid var(--line); color: var(--text); }
+.footer h4 { color: var(--ink) !important; }
+.footer-brand-name { color: var(--ink) !important; }
+.footer-desc, .footer-links li { color: var(--muted) !important; }
+.footer-links a { color: #4a4f58 !important; }
+.footer-links a:hover { color: var(--red) !important; }
+.footer-bottom { color: #8b8f97 !important; border-color: var(--line-2) !important; }
+.footer-phone-link { color: var(--ink) !important; font-weight: 700; }
+
+/* ── Sticky mobile bar ── */
+.sticky-mobile { background: rgba(250,248,245,.94); border-top: 1px solid var(--line); }
+.sticky-bar a { background: #fff; color: var(--ink); border: 1px solid var(--line); }
+.sticky-bar a.primary { background: var(--red); color: #fff; border-color: var(--red); }
+
+/* ── Financing funnel ── */
+.funnel-page { background: transparent; }
+.funnel-kicker { background: var(--red-soft) !important; color: var(--red) !important; }
+.funnel-title { color: var(--ink) !important; letter-spacing: .01em !important; }
+.funnel-copy { color: #4a4f58 !important; }
+.funnel-trust { background: var(--bg) !important; border: 1px solid var(--line) !important; color: var(--ink-2) !important; }
+.funnel-disclaimer { color: var(--muted) !important; border-color: var(--line) !important; }
+.funnel-step h2 { color: var(--ink); }
+.funnel-step p { color: var(--muted); }
+.funnel-option { background: #fff !important; border: 1.5px solid var(--line) !important; color: var(--ink) !important; border-radius: 14px !important; }
+.funnel-option small { color: var(--muted) !important; }
+.funnel-option:hover { border-color: rgba(210,16,46,.45) !important; background: #fffafa !important; }
+.funnel-option.selected, .funnel-option.is-selected, .funnel-option[aria-pressed="true"] {
+  border-color: var(--red) !important; background: var(--red-soft) !important; color: var(--ink) !important;
+  box-shadow: 0 0 0 3px rgba(210,16,46,.12) !important;
+}
+.funnel-option.selected::after, .funnel-option.is-selected::after, .funnel-option[aria-pressed="true"]::after { background: var(--red) !important; color: #fff !important; }
+.funnel-fields input, .funnel-fields select, .funnel-fields textarea { background: #fff !important; border: 1.5px solid var(--line-2) !important; color: var(--ink) !important; }
+.funnel-fields input:focus, .funnel-fields select:focus, .funnel-fields textarea:focus { border-color: var(--red) !important; box-shadow: 0 0 0 4px rgba(210,16,46,.12) !important; }
+.funnel-btn.primary { background: var(--red); color: #fff; box-shadow: 0 10px 24px -6px rgba(210,16,46,.55); border-radius: 999px; }
+.funnel-btn.primary:hover { background: #e3142f; transform: translateY(-2px); }
+.funnel-btn.secondary { background: var(--bg-2); color: var(--ink-2); border-radius: 999px; }
+.funnel-progress { background: var(--bg-2) !important; }
+.funnel-progress span { background: linear-gradient(90deg, var(--red), #ff5a3c) !important; }
+.funnel-progress-top { color: var(--muted) !important; }
+.funnel-consent { color: var(--muted) !important; }
+.funnel-success-icon { background: var(--red-soft) !important; color: var(--red) !important; border: 1px solid rgba(210,16,46,.2); }
+.funnel-success h2 { color: var(--ink); }
+.funnel-success-sub { color: var(--muted); }
+.funnel-success-call { color: var(--red); font-weight: 800; font-size: 24px; display: block; margin: 12px 0; }
+
+.financing-situation-card { padding: 24px; margin-bottom: 14px; }
+.financing-situation-head { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; flex-wrap: wrap; }
+.financing-situation-head h3 { color: var(--ink); margin: 0; }
+.financing-badge { display: inline-flex; padding: 4px 10px; border-radius: 999px; font-family: var(--font-ui); font-size: 11px; font-weight: 700; }
+.financing-badge-green { background: #e8f7ee; color: #1a7f45; }
+.financing-badge-blue  { background: #fdecee; color: var(--red); }
+.financing-badge-amber { background: #fdf3e1; color: #a76a00; }
+.financing-situations-inline { margin-top: 24px; }
+.fsi-label { font-family: var(--font-ui); font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); margin-bottom: 10px; }
+.fsi-item { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px; }
+.fsi-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+.fsi-green { background: #22a45d; } .fsi-blue { background: var(--red); } .fsi-amber { background: #e3a008; }
+.fsi-item strong { display: block; color: var(--ink); font-family: var(--font-ui); font-size: 13px; font-weight: 700; }
+.fsi-item span { color: var(--muted); font-family: var(--font-ui); font-size: 12px; }
+
+/* ── Forms ── */
+input, select, textarea { background: #fff; border: 1.5px solid var(--line-2); color: var(--ink); border-radius: 12px; }
+input:focus, select:focus, textarea:focus { border-color: var(--red); box-shadow: 0 0 0 4px rgba(210,16,46,.12); outline: none; }
+input::placeholder, textarea::placeholder { color: #a39d95; }
+label { color: var(--ink-2); font-weight: 600; }
+
+/* ── Pills ── */
+.pill { background: var(--red-soft); border-color: rgba(210,16,46,.18); color: var(--red); }
+.pill.pill-dark { background: var(--ink); border-color: var(--ink); color: #fff; }
+.pill.pill-grey { background: var(--bg-2); border-color: var(--line); color: var(--muted); }
+
+/* ── Home nav cards ── */
+.home-nav-card { padding: 16px 18px; display: block; }
+.home-nav-card span { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .10em; color: var(--red); font-family: var(--font-ui); display: block; margin-bottom: 4px; }
+.home-nav-card strong { display: block; color: var(--ink); font-size: 14px; font-weight: 700; font-family: var(--font-ui); margin-bottom: 3px; }
+.home-nav-card small { display: block; color: var(--muted); font-size: 12px; font-family: var(--font-ui); }
+
+/* ── Contact page ── */
+.contact-info-value { color: var(--ink); }
+.contact-info-label { color: var(--muted); }
+.contact-info-icon { background: var(--red-soft) !important; color: var(--red) !important; border-radius: 12px; }
+
+/* ── Vehicle detail ── */
+.vehicle-breadcrumb a { color: var(--muted); }
+.vehicle-breadcrumb a:hover { color: var(--red); }
+.price-display, .fact, .description-box, .feature-chip { background: var(--bg) !important; border-color: var(--line) !important; }
+.price-display .main-price, .fact strong { color: var(--ink); }
+.price-display .payment-est strong, .feature-chip::before { color: var(--red); }
+.fact span { color: var(--muted); }
+.description-box, .feature-chip { color: var(--text); }
+.vehicle-approval-band { background: linear-gradient(125deg, #d2102e, #8f0a1f) !important; }
+.vehicle-approval-band h2, .vehicle-approval-band p { color: #fff !important; }
+
+/* ── Policy pages ── */
+.policy-card { padding: clamp(22px, 3vw, 40px) !important; line-height: 1.75; font-size: 15px !important; }
+.policy-card h2, .policy-card h3 { color: var(--ink); margin-top: 1.4em; }
+.policy-card a { color: var(--red); }
+
+/* ── Admin portal: keep light and legible ── */
+.admin-shell { background: var(--bg); }
+.tab.active { background: var(--red); color: #fff; }
+.status-NEW-LEAD { background: #fdecee; color: var(--red); }
+
+/* ── Layout ── */
+.hero-grid { position: relative; z-index: 2; }
+@media (max-width: 860px) {
+  .hero { padding: 48px 0 64px; }
+  .hero-trust { flex-wrap: wrap; border-radius: 18px; }
+  .lead-promise-card { padding: 18px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+  #mlm-bg-scene { display: none; }
+}
+
+/* Arrow inside "Get matched" is a span too: undo every legacy pill style on it */
+html body .vehicle-category-grid .vehicle-category-card strong .rm-arrow {
+  position: static !important; display: inline-block; padding: 0 !important; margin-left: 6px;
+  background: none !important; border: 0 !important; color: inherit !important; font-size: inherit; letter-spacing: 0;
+}
+html body .vehicle-category-grid .vehicle-category-card strong { display: inline-flex !important; align-items: center; font-size: 16px !important; }

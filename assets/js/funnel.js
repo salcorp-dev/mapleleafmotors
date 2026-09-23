@@ -9,7 +9,7 @@
   const qsa = (s, p = document) => Array.from(p.querySelectorAll(s));
   const campaignKeys = [
     'source', 'campaign', 'adset', 'ad', 'placement', 'fbclid',
-    'utm_source', 'utm_campaign', 'utm_medium', 'utm_content'
+    'utm_source', 'utm_campaign', 'utm_medium', 'utm_content', 'utm_term'
   ];
 
   async function loadConfig() {
@@ -271,23 +271,56 @@
     }
 
     const params = new URLSearchParams(location.search);
+    const tracking = collectTracking(params);
     funnelState.consent = !!form.elements.consent?.checked;
-    funnelState.source = params.get('source') || 'website';
-    funnelState.campaign = params.get('campaign') || '';
-    funnelState.adset = params.get('adset') || '';
-    funnelState.ad = params.get('ad') || '';
-    funnelState.placement = params.get('placement') || '';
-    funnelState.fbclid = params.get('fbclid') || '';
-    funnelState.utm_source = params.get('utm_source') || '';
-    funnelState.utm_campaign = params.get('utm_campaign') || '';
-    funnelState.utm_medium = params.get('utm_medium') || '';
-    funnelState.utm_content = params.get('utm_content') || '';
+    Object.assign(funnelState, tracking);
     funnelState.search = params.get('search') || '';
     funnelState.budgetMax = params.get('budgetMax') || '';
-    funnelState.pageUrl = location.href;
-    funnelState.submittedAt = new Date().toISOString();
 
     return { ...funnelState };
+  }
+
+  function collectTracking(params) {
+    const referrer = document.referrer || '';
+    const pageUrl = location.href;
+    const landingPageKey = 'mlm_funnel_landing_page';
+    let landingPage = sessionStorage.getItem(landingPageKey);
+    if (!landingPage) {
+      landingPage = pageUrl;
+      sessionStorage.setItem(landingPageKey, landingPage);
+    }
+
+    const tracking = {
+      source: params.get('source') || params.get('utm_source') || 'website',
+      sourceType: '',
+      utm_source: params.get('utm_source') || '',
+      utm_medium: params.get('utm_medium') || '',
+      utm_campaign: params.get('utm_campaign') || '',
+      utm_content: params.get('utm_content') || '',
+      utm_term: params.get('utm_term') || '',
+      campaign: params.get('campaign') || params.get('utm_campaign') || '',
+      adset: params.get('adset') || '',
+      ad: params.get('ad') || '',
+      placement: params.get('placement') || '',
+      fbclid: params.get('fbclid') || '',
+      referrer,
+      landingPage,
+      pageUrl,
+      submittedAt: new Date().toISOString()
+    };
+
+    tracking.sourceType = classifySourceType(tracking);
+    return tracking;
+  }
+
+  function classifySourceType(t) {
+    const source = String(t.utm_source || t.source || '').toLowerCase();
+    const ref = String(t.referrer || '').toLowerCase();
+    const hasCampaign = !!(t.utm_source || t.utm_medium || t.utm_campaign || t.campaign || t.adset || t.ad || t.placement || t.fbclid);
+    if (t.fbclid || ['facebook', 'fb', 'meta', 'instagram', 'ig'].includes(source)) return 'paid_facebook';
+    if (!hasCampaign && !ref) return 'direct_or_organic';
+    if (/(^|\/\/|\.)(google|bing|yahoo|duckduckgo)\./.test(ref)) return 'organic_search';
+    return 'website_other';
   }
 
   async function submitLead(e) {
@@ -296,6 +329,19 @@
 
     const lead = collectFormData();
     const submit = qs('#submitFunnel');
+
+    // Shared identifiers so the browser pixel + server-side Conversions API
+    // are deduplicated into a single Lead conversion by Meta.
+    const getCookie = name => {
+      const m = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
+      return m ? decodeURIComponent(m[1]) : '';
+    };
+    const eventId = (window.crypto && crypto.randomUUID)
+      ? crypto.randomUUID()
+      : 'lead-' + Date.now() + '-' + Math.random().toString(16).slice(2);
+    lead.eventId = eventId;
+    lead.fbp = getCookie('_fbp');
+    lead.fbc = getCookie('_fbc') || (lead.fbclid ? `fb.1.${Math.floor(Date.now()/1000)}.${lead.fbclid}` : '');
 
     if (submit) {
       submit.disabled = true;
@@ -332,6 +378,18 @@
 
       if (form) form.style.display = 'none';
       if (success) success.classList.add('active');
+
+      // Meta Pixel: report the finance submission as a Lead conversion.
+      // eventID matches the server-side Conversions API event so Meta counts it once.
+      if (window.fbq) {
+        try {
+          fbq('track', 'Lead', {
+            content_name: 'Finance Application',
+            content_category: lead.vehicleType || '',
+            source: lead.sourceType || lead.source || ''
+          }, { eventID: eventId });
+        } catch (pixelErr) { /* never block the funnel on a pixel error */ }
+      }
     } catch (err) {
       showError('Could not submit right now. Please call or text Maple Leaf Motors at 204-509-2668, or try again shortly.');
       console.error(err);

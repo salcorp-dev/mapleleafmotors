@@ -3,27 +3,48 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
 <title>Admin Login | Maple Leaf Motors</title>
-<link rel="stylesheet" href="../assets/css/styles.css">
+<link rel="stylesheet" href="../assets/css/styles.css?v=14">
+<link rel="stylesheet" href="../assets/css/design.css?v=14">
+<link rel="stylesheet" href="../assets/css/admin.css?v=14">
 <link rel="icon" href="../assets/images/maple-leaf-motors-logo.png">
 </head>
 <body>
 <div class="admin-login">
-  <form id="loginForm" class="card" style="width:min(420px,92vw);padding:36px;">
-    <div style="text-align:center;margin-bottom:28px;">
-      <img src="../assets/images/maple-leaf-motors-logo.png" alt="Maple Leaf Motors" style="width:56px;height:56px;object-fit:contain;border-radius:14px;margin:0 auto 12px;">
-      <h2 style="font-size:22px;">Owner Portal</h2>
-      <p class="muted" style="font-size:14px;font-family:var(--font-ui);">Lead command center and inventory manager.</p>
+  <section class="login-visual" aria-hidden="true">
+    <video autoplay muted loop playsinline preload="metadata" poster="../assets/video/highway-poster.jpg">
+      <source src="../assets/video/highway-mobile.mp4" type="video/mp4">
+    </video>
+    <div class="login-brand">
+      <img src="../assets/images/maple-leaf-motors-logo.png" alt="">
+      <span>Maple Leaf Motors</span>
     </div>
-    <div class="form-group">
-      <label>Password</label>
-      <input id="password" type="password" placeholder="Enter your password">
+    <div>
+      <h1>Owner<br>Portal</h1>
+      <p>Your lead command center. Every request from the website lands here, ready for follow-up.</p>
     </div>
-    <button class="btn btn-full" style="margin-top:8px;">Login →</button>
-    <p id="msg" class="muted" style="margin-top:12px;font-size:13px;font-family:var(--font-ui);text-align:center;"></p>
-    <p class="muted" style="margin-top:16px;font-size:12px;text-align:center;font-family:var(--font-ui);">Prototype password: MapleLeaf2026</p>
-  </form>
+    <small>Winnipeg · Canada-wide vehicle matching</small>
+  </section>
+
+  <section class="login-panel">
+    <form id="loginForm" class="login-card">
+      <h2>Welcome back</h2>
+      <p class="muted">Sign in to manage leads, inventory and client stories.</p>
+      <div class="form-group">
+        <label for="username">Username</label>
+        <input id="username" type="text" autocomplete="username" placeholder="Enter your username">
+      </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input id="password" type="password" autocomplete="current-password" placeholder="Enter your password">
+      </div>
+      <button class="btn btn-full" type="submit">Sign in</button>
+      <p id="msg" class="muted" style="margin:12px 0 0;font-size:13px;text-align:center;"></p>
+      <p class="login-foot"><a href="../index.html">← Back to website</a></p>
+    </form>
+  </section>
 </div>
-<script src="../assets/js/admin.js"></script>
+<script src="../assets/js/admin.js?v=14"></script>
 </body>
 </html>

@@ -2,6 +2,7 @@
 const $ = (s, p = document) => p.querySelector(s);
 const $$ = (s, p = document) => [...p.querySelectorAll(s)];
 const LIVE_INVENTORY_API = "https://maple-leaf-inventory.sal96wpg.workers.dev/inventory";
+const LEADS_API = "https://maple-leaf-inventory.sal96wpg.workers.dev/leads";
 
 async function loadConfig() {
   try {
@@ -744,11 +745,33 @@ function wizard() {
 
 // ── Generic Lead Forms ──
 function forms() {
-  $$('[data-lead-form]').forEach(f => f.onsubmit = e => {
+  $$('[data-lead-form]').forEach(f => f.onsubmit = async e => {
     e.preventDefault();
-    let d = Object.fromEntries(new FormData(f).entries());
-    d.type = f.dataset.leadForm;
-    saveLead(d);
+    const d = Object.fromEntries(new FormData(f).entries());
+    const btn = $('button[type="submit"]', f);
+    const err = $('.lead-form-error', f);
+    const [firstName, ...rest] = String(d.name || '').trim().split(/\s+/);
+    const params = new URLSearchParams(location.search);
+    const lead = {
+      firstName, lastName: rest.join(' '), phone: d.phone || '', email: d.email || '',
+      notes: `[${f.dataset.leadForm}] ${d.message || ''}`.trim(), consent: !!d.consent,
+      source: params.get('utm_source') || 'website', pageUrl: location.href, referrer: document.referrer,
+      utm_source: params.get('utm_source') || '', utm_medium: params.get('utm_medium') || '',
+      utm_campaign: params.get('utm_campaign') || '', fbclid: params.get('fbclid') || ''
+    };
+    if (btn) { btn.disabled = true; btn.dataset.label = btn.textContent; btn.textContent = 'Sending...'; }
+    if (err) err.style.display = 'none';
+    try {
+      const res = await fetch(LEADS_API, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lead })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data.error) throw new Error(data.error || 'Could not send message');
+    } catch (ex) {
+      if (btn) { btn.disabled = false; btn.textContent = btn.dataset.label; }
+      if (err) { err.textContent = 'Sorry, your message could not be sent. Please call us at 204-509-2668.'; err.style.display = 'block'; }
+      return;
+    }
     f.innerHTML = `<div style="text-align:center;padding:32px 16px;">
       <div style="font-size:40px;margin-bottom:14px;">✅</div>
       <h3 style="margin-bottom:8px;">Message Received</h3>
